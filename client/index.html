@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Syncing 2</title>
+
+    <link rel="stylesheet" type="text/css" href="/css/style.css" />
+
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/lib/three.min.js"></script>
+    <script src="/js/lib/physi.js"></script>
+    <script>
+        Physijs.scripts.worker = '/js/lib/physijs_worker.js';
+        Physijs.scripts.ammo   = '/js/lib/ammo.js';
+    </script>
+    <script src="/js/basic.js"></script>
+    <script src="/js/scene.js"></script>
+    <script src="/js/ui.js"></script>
+</head>
+<body>
+    <canvas style="border: 2px solid black">Dumb browser, get a new one</canvas>
+    <div id="pop_ups"></div>
+</body>
+</html>

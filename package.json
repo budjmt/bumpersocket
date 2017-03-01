@@ -1,0 +1,35 @@
+{
+  "name": "syncing-2",
+  "version": "1.0.0",
+  "engines": {
+    "node": "7.3.0",
+    "npm": "3.10.10"
+  },
+  "description": "canvas sync 2",
+  "main": "./src/server.js",
+  "scripts": {
+    "addLint": "npm install --save-dev eslint eslint-config-airbnb eslint-plugin-import",
+    "start": "node ./src/server.js",
+    "pretest": "eslint --fix ./client ./src",
+    "test": "echo \"Tests complete\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/budjmt/syncing-2.git"
+  },
+  "author": "Michael Cohen",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/budjmt/syncing-2/issues"
+  },
+  "homepage": "https://github.com/budjmt/syncing-2#readme",
+  "devDependencies": {
+    "eslint": "^3.16.1",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-import": "^2.2.0"
+  },
+  "dependencies": {
+    "express": "^4.14.1",
+    "socket.io": "^1.7.3"
+  }
+}
