@@ -22,7 +22,7 @@ class Scene {
         requestAnimationFrame(render);
     
         dt = clock.getDelta();
-        if(this.scene.update) this.scene.update(dt);
+        if(this.update) this.update(dt);
         this.scene.simulate();
     
         uniforms.time.value += dt;
@@ -110,8 +110,8 @@ const mouseWorldCoords = (zDepth) => {
 	
 	const dir = mouseVec.sub(camera.position).normalize();
 	const dist = (zDepth - camera.position.z) / dir.z;
-	mouseVec = camera.position.clone().add(dir.multiplyScalar(dist));
-	return mouseVec;
+	
+	return camera.position.clone().add(dir.multiplyScalar(dist));
 };
 
 const mouseCast = (object) => {

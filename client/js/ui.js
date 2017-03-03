@@ -39,11 +39,11 @@ class Menu {
     }
 
     display() {
-        this.options.forEach((el, i) => setTimeout(el.display, i * 100));
+        this.options.forEach((el, i) => setTimeout(el.display.bind(el), i * 100));
     }
 
     hide() {
-        this.options.forEach((el, i) => setTimeout(el.hide, i * 100));
+        this.options.forEach((el, i) => setTimeout(el.hide.bind(el), i * 100));
     }
 
     //set the value of next for the menu item whose result you want to be this chain 
@@ -81,9 +81,9 @@ const setupUI = () => {
 	//menu.options[0].next = menu.createTextBoxChain([ 
 	//	'is', new TextBox('AMAAAAZING', cody)
 	//]);
-	//menu.options[1].next = menu.createTextBoxChain([ 
-	//	'of', new TextBox('spinning cubes.', basicCube), 'Aren\'t they neat?'
-	//]);
+	menu.options[1].next = menu.createTextBoxChain([ 
+		'of', new TextBox('spinning cubes.', basicCube), 'Aren\'t they neat?'
+	]);
 	
 	menu.options[2].next = menu.createTextBoxChain([
 		'Looking at geometry and vector math, we deal with a lot of different constructs.',
@@ -136,7 +136,6 @@ const setupUI = () => {
 		option.element = createTextBoxElement(true);
 		option.element.onclick = option.progress.bind(option);
 		option.display();
-        console.log(option.element);
 	});
 	
 	menus.push(menu);
