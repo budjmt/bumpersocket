@@ -4,6 +4,7 @@ const path = require('path');
 const socketio = require('socket.io');
 const express = require('express');
 const common = require('./common.js');
+const game = require('./game.js');
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
@@ -24,15 +25,28 @@ console.log(`Listening on 127.0.0.1: ${port}`);
 
 const io = socketio(httpServer);
 
-const onJoined = (sock) => {
+const pushUpdates = () => {
+  players.forEach(player => io.sockets.in('room1').emit('update', player));
+};
+
+setInterval(pushUpdates, 200);
+
+const onJoin = (sock) => {
   const socket = sock;
-  socket.on('draw', data => socket.broadcast.to('room1').emit('draw', data));
+  socket.on('join', data => {
+    new Player(data.name, data.position).create();
+  });
+}
+
+const onInput = (sock) => {
+  const socket = sock;
+  socket.on('input', data => game.players[data.name].updateDirection(data));
 };
 
 io.sockets.on('connection', (socket) => {
   console.log('started');
   socket.join('room1');
-  onJoined(socket);
+  onInput(socket);
 });
 
 console.log('Websocket server started');
