@@ -11,11 +11,8 @@ const losers = [];
 const players = {};
 
 const scene = new Physijs.Scene();
-scene.add(new Physijs.BoxMesh(
-    new THREE.CubeGeometry(20, 20, 1),
-    new THREE.MeshBasicMaterial(),
-    0, // mass
-));
+scene.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
+scene.add(new Physijs.BoxMesh(new THREE.CubeGeometry(20, 20, 1), new THREE.MeshBasicMaterial(), 0));
 scene.addEventListener('update', () => {
   const playersLeft = [];
   Object.keys(players).forEach((playerName) => {
@@ -39,10 +36,7 @@ class Player {
   constructor(name, color, position) {
     this.name = name;
     this.color = color;
-    this.gameObject = new Physijs.SphereMesh(
-            new THREE.SphereGeometry(1, 1, 1),
-            new THREE.MeshBasicMaterial(),
-        );
+    this.gameObject = new Physijs.SphereMesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial());
     this.gameObject.position.set(position);
     // this.gameObject.addEventListener('collision', this.onCollision.bind(this));
     this.direction = new THREE.Vector3(0, 0, 0);
@@ -70,8 +64,7 @@ class Player {
       position: this.gameObject.position,
       rotation: this.gameObject.rotation,
       linearVelocity: this.gameObject.getLinearVelocity(),
-      angularVelocity: this.gameObject.getLinearVelocity(),
-    };
+      angularVelocity: this.gameObject.getLinearVelocity() };
   }
 
   update() {

@@ -23,7 +23,7 @@ const cubeSetup = () => {
 
   const light = new THREE.DirectionalLight(0xffffff, 1.0);
   light.position.set(1, 2, 3);
-  light.rotation.set(-45, 45, 0);
+  light.rotation.set(-Math.PI / 4, Math.PI / 4, 0);
   cubeS.add(cube);
   cubeS.add(light);
 
@@ -35,7 +35,7 @@ const cubeSetup = () => {
   s.scene = cubeS;
   s.reset = () => {
     cube.position.set(0, 0, 0);
-    cube.rotation.set(10, 45, 0);
+    cube.rotation.set(Math.PI / 18, Math.PI * 0.25, 0);
     cube.__dirtyPosition = true;
     cube.__dirtyRotation = true;
   };
@@ -63,6 +63,7 @@ const basicCube = () => scene = cubeScene;
 
 const basicGameSetup = () => {
   const gameS = new Physijs.Scene();
+  gameS.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
   const ground = new Physijs.BoxMesh(
         new THREE.BoxGeometry(20, 20, 1),
         new THREE.MeshPhongMaterial({
@@ -71,12 +72,12 @@ const basicGameSetup = () => {
         }),
         0 // mass
     );
-  ground.rotation.set(90, 0, 0);
+  ground.rotation.set(Math.PI / 2, 0, 0);
   gameS.add(ground);
 
   const light = new THREE.DirectionalLight(0xffffff, 1.0);
-  light.position.set(1, 2, 3);
-  light.rotation.set(-45, 45, 0);
+  light.position.set(5, 4, 3);
+  light.rotation.set(-Math.PI / 2, Math.PI / 2, 0);
   gameS.add(light);
 
   const s = new Scene();

@@ -37,10 +37,10 @@ class Player {
     this.name = name;
     this.color = color;
     this.gameObject = new Physijs.SphereMesh(
-      new THREE.SphereGeometry(1, 1, 1),
+      new THREE.SphereGeometry(1),
       new THREE.MeshPhongMaterial({
           color: color,
-          emissive: 0x553333,
+          emissive: 0xffffff
         })
     );
     this.gameObject.position.set(position);
@@ -51,6 +51,7 @@ class Player {
 
   instantiate() {
     if (this.added) return;
+    console.log(scene.scene);
     scene.scene.add(this.gameObject);
     players[this.name] = this;
     this.added = true;
@@ -155,7 +156,7 @@ window.addEventListener('load', () => {
 	// fov, aspect, near, far
   camera = new THREE.PerspectiveCamera(75, initWidth / initHeight, 0.1, 1000);
   camera.position.y = 15;
-  camera.rotation.set(-90, 0, 0);
+  camera.rotation.set(-Math.PI / 2, 0, 0);
 
   requestAnimationFrame(render);
 });

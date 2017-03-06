@@ -25,7 +25,6 @@
     const randColor = () => hexShift(randRange(0,256) | 0, 4) + hexShift(randRange(0,256) | 0, 2) + (randRange(0,256) | 0);
 
     const getVector3 = (obj) => new THREE.Vector3(obj.x, obj.y, obj.z);
-    const getQuat = (obj) => obj;
 
     let socket;
     let name;
@@ -46,6 +45,7 @@
         socket.on('connectSuccess', () => {
             name = data.name;
             players[name] = new Player(data.name, data.color, data.position);
+            players[name].instantiate();
         });
 
         socket.on('add', data => {
@@ -60,7 +60,7 @@
                 
                 const go = players[data.name].gameObject;
                 go.position.set(getVector3(data.position));
-                go.rotation.set(getQuat(data.rotation));
+                go.rotation.set(getVector3(data.rotation));
                 go.__dirtyPosition = go.__dirtyRotation = true;
 
                 go.setLinearVelocity(getVector3(data.linearVelocity));
