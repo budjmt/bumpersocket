@@ -17,6 +17,94 @@
     <script src="/js/basic.js"></script>
     <script src="/js/scene.js"></script>
     <script src="/js/ui.js"></script>
+    <script type="text/babel">
+
+    const randRange = (min, max) => Math.random() * (min + max) - min;
+    
+    const hexShift = (val, amt) => val << ((4 * amt) | 0);
+    const randColor = () => hexShift(randRange(0,256) | 0, 4) + hexShift(randRange(0,256) | 0, 2) + (randRange(0,256) | 0);
+
+    const getVector3 = (obj) => new THREE.Vector3(obj.x, obj.y, obj.z);
+    const getQuat = (obj) => obj;
+
+    let socket;
+    let name;
+
+    const init = () => {
+        socket = io.connect();
+        let data = { 
+            name:  Math.random() + ''
+          , color: randColor()
+          , position: new THREE.Vector3(
+              randRange(-10, 10), 5, randRange(-10, 10)
+            ) 
+        };
+        socket.on('connectFail', () => {
+            data.name = Math.random() + '';
+            socket.emit('join', player);
+        });
+        socket.on('connectSuccess', () => {
+            name = data.name;
+            players[name] = new Player(data.name, data.color, data.position);
+        });
+
+        socket.on('add', data => {
+            let player = new Player(data.name, data.color, data.position);
+            player.lastUpdate = data.time;
+            player.instantiate();
+        })
+
+        socket.on('update', (data) => {
+            if(data.time > players[data.name].lastUpdate) {
+                players[data.name].time = data.time;
+                
+                const go = players[data.name].gameObject;
+                go.position.set(getVector3(data.position));
+                go.rotation.set(getQuat(data.rotation));
+                go.__dirtyPosition = go.__dirtyRotation = true;
+
+                go.setLinearVelocity(getVector3(data.linearVelocity));
+                go.setAngularVelocity(getVector3(data.angularVelocity));
+            }
+        });
+
+        socket.on('lose', (data) => {
+            players[data].destroy();
+        });
+
+        socket.on('win', (data) => {
+            console.log(`Winner! ${data.name}`)
+        });
+
+        socket.on('gameOver', (data) => {
+            for(let player in players)
+                players[player].destroy();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            let dir = new THREE.Vector3(0, 0, 0);
+            switch(e.keyCode) {
+                case 87: dir.y =  1; break; // w
+                case 83: dir.y = -1; break; // s
+                case 68: dir.x =  1; break; // d
+                case 65: dir.x = -1; break; // a
+            }
+
+            let input = { direction: dir };
+            players[name].updateDirection(input);
+            socket.emit('input', { name, input });
+        });
+
+        scene.scene.addEventListener('update', () => {
+            for(let playerName in players) 
+                players[playerName].update();
+        })
+
+        socket.emit('join', data);
+    };
+
+    window.onload = init;
+    </script>
 </head>
 <body>
     <canvas style="border: 2px solid black">Dumb browser, get a new one</canvas>

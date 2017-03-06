@@ -1,5 +1,4 @@
 const http = require('http');
-const fs = require('fs');
 const path = require('path');
 const socketio = require('socket.io');
 const express = require('express');
@@ -10,7 +9,7 @@ const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const root = `${__dirname}/../client/`;
 
-const getOptions = () => { return { root, headers: { 'x-timestamp': Date.now(), 'x-sent': true } }; };
+const getOptions = () => ({ root, headers: { 'x-timestamp': Date.now(), 'x-sent': true } });
 
 const app = express();
 const httpServer = http.createServer(app).listen(port);
@@ -26,27 +25,66 @@ console.log(`Listening on 127.0.0.1: ${port}`);
 const io = socketio(httpServer);
 
 const pushUpdates = () => {
-  players.forEach(player => io.sockets.in('room1').emit('update', player));
+  while (game.losers.length > 0) {
+    const name = game.losers.pop().name;
+    io.sockets.in('room1').emit('lose', name);
+  }
+
+  if (game.gameOver) {
+    if (game.winner) {
+      io.sockets.in('room1').emit('win', game.winner);
+    }
+    Object.keys(game.players).forEach(player => game.players[player].destroy());
+    io.sockets.in('room1').emit('gameOver', null);
+  }
+
+  Object.keys(game.players).forEach(player => io.sockets.in('room1').emit('update', game.players[player].packet));
 };
 
 setInterval(pushUpdates, 200);
 
 const onJoin = (sock) => {
   const socket = sock;
-  socket.on('join', data => {
-    new Player(data.name, data.position).create();
+  socket.on('join', (data) => {
+    if (common.hasProperty(game.players, data.name)) {
+      socket.emit('connectFail', 'That username is already in use, try another');
+      return;
+    }
+    socket.name = data.name;
+    console.log(data.name);
+    const player = new game.Player(socket.name, data.color, data.position);
+    Object.keys(game.players).forEach(otherPlayer => socket.emit('add', { player: game.players[otherPlayer], time: new Date().getTime() }));
+    player.instantiate();
+
+    socket.emit('connectSuccess', null);
+    const packet = player.packet;
+    packet.color = data.color;
+    socket.broadcast.to('room1').emit('add', { player: packet, time: new Date().getTime() });
   });
-}
+};
 
 const onInput = (sock) => {
   const socket = sock;
-  socket.on('input', data => game.players[data.name].updateDirection(data));
+  socket.on('input', data => game.players[data.name].updateDirection(data.input));
+};
+
+const onDisconnect = (sock) => {
+  const socket = sock;
+  socket.on('disconnect', () => {
+    // check that the user successfully joined before deleting
+    if (common.hasProperty(game.players, socket.name)) {
+      game.players[socket.name].destroy();
+      io.sockets.in('room1').emit('lose', socket.name);
+    }
+  });
 };
 
 io.sockets.on('connection', (socket) => {
   console.log('started');
   socket.join('room1');
+  onJoin(socket);
   onInput(socket);
+  onDisconnect(socket);
 });
 
 console.log('Websocket server started');
