@@ -31,8 +31,7 @@ const cubeSetup = () => {
   const cyan = new THREE.Color(0x00ffee);
   const green = new THREE.Color(0x00ffaa);
 
-  const s = new Scene();
-  s.scene = cubeS;
+  const s = new Scene(cubeS);
   s.reset = () => {
     cube.position.set(0, 0, 0);
     cube.rotation.set(Math.PI / 18, Math.PI * 0.25, 0);
@@ -65,7 +64,7 @@ const basicGameSetup = () => {
   const gameS = new Physijs.Scene();
   gameS.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
   const ground = new Physijs.BoxMesh(
-        new THREE.BoxGeometry(20, 20, 1),
+        new THREE.CubeGeometry(20, 20, 1),
         new THREE.MeshPhongMaterial({
           color: 0x000000,
           emissive: 0x553333,
@@ -80,8 +79,7 @@ const basicGameSetup = () => {
   light.rotation.set(-Math.PI / 2, Math.PI / 2, 0);
   gameS.add(light);
 
-  const s = new Scene();
-  s.scene = gameS;
+  const s = new Scene(gameS);
   s.reset = () => {};
   s.reset();
   s.update = (dt) => {};

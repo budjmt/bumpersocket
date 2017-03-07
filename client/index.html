@@ -19,7 +19,11 @@
     <script src="/js/ui.js"></script>
     <script type="text/babel">
 
-    const randRange = (min, max) => Math.random() * (min + max) - min;
+    const randRange = (min, max) => Math.random() * (max - min) + min;
+
+    const aVal = 'A'.charCodeAt(), zVal = 'Z'.charCodeAt();
+    const getRandomChar = () => String.fromCharCode(randRange(aVal, zVal + 1) | 0);
+    const getName = () => getRandomChar() + getRandomChar() + getRandomChar();
     
     const hexShift = (val, amt) => val << ((4 * amt) | 0);
     const randColor = () => hexShift(randRange(0,256) | 0, 4) + hexShift(randRange(0,256) | 0, 2) + (randRange(0,256) | 0);
@@ -31,36 +35,20 @@
 
     const init = () => {
         socket = io.connect();
-        let data = { 
-            name:  Math.random() + ''
-          , color: randColor()
-          , position: new THREE.Vector3(
-              randRange(-10, 10), 5, randRange(-10, 10)
-            ) 
-        };
-        socket.on('connectFail', () => {
-            data.name = Math.random() + '';
-            socket.emit('join', player);
-        });
-        socket.on('connectSuccess', () => {
-            name = data.name;
-            players[name] = new Player(data.name, data.color, data.position);
-            players[name].instantiate();
-        });
 
         socket.on('add', data => {
-            let player = new Player(data.name, data.color, data.position);
+            let player = new Player(data.player.name, data.player.color, data.player.position);
             player.lastUpdate = data.time;
             player.instantiate();
         })
 
         socket.on('update', (data) => {
-            if(data.time > players[data.name].lastUpdate) {
-                players[data.name].time = data.time;
+            if(Object.hasOwnProperty.call(players, data.name) && data.time > players[data.name].lastUpdate) {
+                players[data.name].lastUpdate = data.time;
                 
                 const go = players[data.name].gameObject;
-                go.position.set(getVector3(data.position));
-                go.rotation.set(getVector3(data.rotation));
+                go.position.set(data.position.x, data.position.y, data.position.z);
+                go.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
                 go.__dirtyPosition = go.__dirtyRotation = true;
 
                 go.setLinearVelocity(getVector3(data.linearVelocity));
@@ -69,14 +57,18 @@
         });
 
         socket.on('lose', (data) => {
-            players[data].destroy();
+            if(Object.hasOwnProperty.call(players, data)) {
+                console.log(`${data} lost`);
+                players[data].destroy();
+            }
         });
 
         socket.on('win', (data) => {
-            console.log(`Winner! ${data.name}`)
+            console.log(`Winner! ${data}`);
         });
 
         socket.on('gameOver', (data) => {
+            console.log(`Game over.`);
             for(let player in players)
                 players[player].destroy();
         });
@@ -84,12 +76,13 @@
         window.addEventListener('keydown', (e) => {
             let dir = new THREE.Vector3(0, 0, 0);
             switch(e.keyCode) {
-                case 87: dir.y =  1; break; // w
-                case 83: dir.y = -1; break; // s
+                case 87: dir.z = -1; break; // w
+                case 83: dir.z =  1; break; // s
                 case 68: dir.x =  1; break; // d
                 case 65: dir.x = -1; break; // a
             }
 
+            dir.multiplyScalar(50);
             let input = { direction: dir };
             players[name].updateDirection(input);
             socket.emit('input', { name, input });
@@ -100,7 +93,23 @@
                 players[playerName].update();
         })
 
-        socket.emit('join', data);
+        let joinData = { 
+            name:  getName()
+          , color: randColor()
+          , position: new THREE.Vector3(
+              randRange(-5, 5), 5, randRange(-5, 5)
+            ) 
+        };
+        socket.on('connectFail', () => {
+            joinData.name = getName;
+            socket.emit('join', joinData);
+        });
+        socket.on('connectSuccess', () => {
+            name = joinData.name;
+            new Player(joinData.name, joinData.color, joinData.position).instantiate();
+        });
+
+        socket.emit('join', joinData);
     };
 
     window.onload = init;

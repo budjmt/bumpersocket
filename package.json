@@ -10,6 +10,7 @@
   "scripts": {
     "addLint": "npm install --save-dev eslint eslint-config-airbnb eslint-plugin-import",
     "start": "node ./src/server.js",
+    "stop": "taskkill /f /im node.exe",
     "pretest": "eslint --fix ./src",
     "test": "echo \"Tests complete\""
   },

@@ -27,6 +27,7 @@ const io = socketio(httpServer);
 const pushUpdates = () => {
   while (game.losers.length > 0) {
     const name = game.losers.pop().name;
+    console.log(`${name} lost`);
     io.sockets.in('room1').emit('lose', name);
   }
 
@@ -36,6 +37,7 @@ const pushUpdates = () => {
     }
     Object.keys(game.players).forEach(player => game.players[player].destroy());
     io.sockets.in('room1').emit('gameOver', null);
+    game.gameOver = false;
   }
 
   Object.keys(game.players).forEach(player => io.sockets.in('room1').emit('update', game.players[player].packet));
@@ -52,8 +54,14 @@ const onJoin = (sock) => {
     }
     socket.name = data.name;
     console.log(data.name);
+    game.playerCount++;
     const player = new game.Player(socket.name, data.color, data.position);
-    Object.keys(game.players).forEach(otherPlayer => socket.emit('add', { player: game.players[otherPlayer], time: new Date().getTime() }));
+    Object.keys(game.players).forEach((otherPlayerName) => {
+      const otherPlayer = game.players[otherPlayerName];
+      const packet = otherPlayer.packet;
+      packet.color = otherPlayer.color;
+      socket.emit('add', { player: packet, time: new Date().getTime() });
+    });
     player.instantiate();
 
     socket.emit('connectSuccess', null);
@@ -65,7 +73,11 @@ const onJoin = (sock) => {
 
 const onInput = (sock) => {
   const socket = sock;
-  socket.on('input', data => game.players[data.name].updateDirection(data.input));
+  socket.on('input', (data) => {
+    if (common.hasProperty(game.players, data.name)) {
+      game.players[data.name].updateDirection(data.input);
+    }
+  });
 };
 
 const onDisconnect = (sock) => {
@@ -75,6 +87,7 @@ const onDisconnect = (sock) => {
     if (common.hasProperty(game.players, socket.name)) {
       game.players[socket.name].destroy();
       io.sockets.in('room1').emit('lose', socket.name);
+      game.playerCount--;
     }
   });
 };
@@ -88,3 +101,5 @@ io.sockets.on('connection', (socket) => {
 });
 
 console.log('Websocket server started');
+
+// game.simulate();

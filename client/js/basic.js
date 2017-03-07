@@ -17,6 +17,11 @@ class Scene {
     this.scene = scene;
     this.update = undefined;
     this.reset = undefined;
+	this.scene.addEventListener('update', this.simulate.bind(this));
+  }
+
+  simulate() {
+	  this.scene.simulate();
   }
 
   render() {
@@ -24,7 +29,6 @@ class Scene {
 
     dt = clock.getDelta();
     if (this.update) this.update(dt);
-    this.scene.simulate();
 
     uniforms.time.value += dt;
     renderer.render(this.scene, camera);
@@ -38,20 +42,20 @@ class Player {
     this.color = color;
     this.gameObject = new Physijs.SphereMesh(
       new THREE.SphereGeometry(1),
-      new THREE.MeshPhongMaterial({
+      Physijs.createMaterial(
+        new THREE.MeshPhongMaterial({
           color: color,
-          emissive: 0xffffff
-        })
+          emissive: 0x222222
+        }), 0.8, 0.7)
     );
-    this.gameObject.position.set(position);
-    this.gameObject.addEventListener('collision', this.onCollision.bind(this));
+    this.gameObject.position.set(position.x, position.y, position.z);
+    //this.gameObject.addEventListener('collision', this.onCollision.bind(this));
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
   }
 
   instantiate() {
     if (this.added) return;
-    console.log(scene.scene);
     scene.scene.add(this.gameObject);
     players[this.name] = this;
     this.added = true;
@@ -71,13 +75,13 @@ class Player {
       position: this.gameObject.position,
       rotation: this.gameObject.rotation,
       linearVelocity: this.gameObject.getLinearVelocity(),
-      angularVelocity: this.gameObject.getLinearVelocity(),
+      angularVelocity: this.gameObject.getAngularVelocity(),
     };
   }
 
   update() {
     this.gameObject.applyCentralForce(this.direction);
-    this.direction.multiplyScalar(0.8);
+    this.direction.set(0, 0, 0);
   }
 
   onCollision(other, relVel, relRot, contactNormal) {
@@ -85,7 +89,7 @@ class Player {
   }
 
   updateDirection(input) {
-    this.direction = new THREE.Vector3(input.direction.x, input.direction.y, input.direction.z);
+    this.direction.set(input.direction.x, input.direction.y, input.direction.z);
   }
 }
 
@@ -155,10 +159,11 @@ window.addEventListener('load', () => {
 
 	// fov, aspect, near, far
   camera = new THREE.PerspectiveCamera(75, initWidth / initHeight, 0.1, 1000);
-  camera.position.y = 15;
+  camera.position.set(0, 15, 0);
   camera.rotation.set(-Math.PI / 2, 0, 0);
 
   requestAnimationFrame(render);
+  scene.simulate();
 });
 
 const mouseWorldCoords = (zDepth) => {
