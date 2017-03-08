@@ -73,20 +73,25 @@
                 players[player].destroy();
         });
 
-        window.addEventListener('keydown', (e) => {
-            let dir = new THREE.Vector3(0, 0, 0);
-            switch(e.keyCode) {
-                case 87: dir.z = -1; break; // w
-                case 83: dir.z =  1; break; // s
-                case 68: dir.x =  1; break; // d
-                case 65: dir.x = -1; break; // a
+        window.addEventListener('keydown', (e) => inputs[e.keyCode] = true);
+        window.addEventListener('keyup',   (e) => inputs[e.keyCode] = false);
+
+        const playerUpdate = function() {
+            let dir = new THREE.Vector3(0,0,0);
+            if(inputs[87]) dir.z -= 1; // w
+            if(inputs[83]) dir.z += 1; // s
+            if(inputs[68]) dir.x += 1; // d
+            if(inputs[65]) dir.x -= 1; // a
+
+            const moved = dir.x || dir.z
+            let input = { direction: dir };
+            if(moved) {
+                dir.setLength(50);
+                socket.emit('input', { name, input });
             }
 
-            dir.multiplyScalar(50);
-            let input = { direction: dir };
-            players[name].updateDirection(input);
-            socket.emit('input', { name, input });
-        });
+            this.updateDirection(input);
+        };
 
         scene.scene.addEventListener('update', () => {
             for(let playerName in players) 
@@ -106,7 +111,9 @@
         });
         socket.on('connectSuccess', () => {
             name = joinData.name;
-            new Player(joinData.name, joinData.color, joinData.position).instantiate();
+            const player = new Player(joinData.name, joinData.color, joinData.position);
+            player.customUpdate = playerUpdate.bind(player);
+            player.instantiate();
         });
 
         socket.emit('join', joinData);

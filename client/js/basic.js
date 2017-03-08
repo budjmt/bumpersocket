@@ -35,6 +35,8 @@ class Scene {
   }
 }
 
+const inputs = {};
+
 const players = {};
 class Player {
   constructor(name, color, position) {
@@ -52,6 +54,7 @@ class Player {
     //this.gameObject.addEventListener('collision', this.onCollision.bind(this));
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
+    this.customUpdate = undefined;
   }
 
   instantiate() {
@@ -82,6 +85,7 @@ class Player {
   update() {
     this.gameObject.applyCentralForce(this.direction);
     this.direction.set(0, 0, 0);
+    if(this.customUpdate) this.customUpdate();
   }
 
   onCollision(other, relVel, relRot, contactNormal) {
