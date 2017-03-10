@@ -43,12 +43,12 @@ const pushUpdates = () => {
   Object.keys(game.players).forEach(player => io.sockets.in('room1').emit('update', game.players[player].packet));
 };
 
-setInterval(pushUpdates, 200);
+setInterval(pushUpdates, 1000 / 60);
 
 const onJoin = (sock) => {
   const socket = sock;
   socket.on('join', (data) => {
-    if (common.hasProperty(game.players, data.name)) {
+    if (game.players[data.name]) {
       socket.emit('connectFail', 'That username is already in use, try another');
       return;
     }
@@ -74,7 +74,7 @@ const onJoin = (sock) => {
 const onInput = (sock) => {
   const socket = sock;
   socket.on('input', (data) => {
-    if (common.hasProperty(game.players, data.name)) {
+    if (game.players[data.name]) {
       game.players[data.name].updateDirection(data.input);
     }
   });
@@ -84,7 +84,7 @@ const onDisconnect = (sock) => {
   const socket = sock;
   socket.on('disconnect', () => {
     // check that the user successfully joined before deleting
-    if (common.hasProperty(game.players, socket.name)) {
+    if (game.players[socket.name]) {
       game.players[socket.name].destroy();
       io.sockets.in('room1').emit('lose', socket.name);
       game.playerCount--;

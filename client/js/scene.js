@@ -1,8 +1,4 @@
 
-const init = () => {
-
-};
-
 const clear = () => {
   scene.reset && scene.reset();
   camera.position.set(0, 0, 5);
@@ -65,10 +61,10 @@ const basicGameSetup = () => {
   gameS.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
   const ground = new Physijs.BoxMesh(
         new THREE.CubeGeometry(20, 20, 1),
-        new THREE.MeshPhongMaterial({
+        Physijs.createMaterial(new THREE.MeshPhongMaterial({
           color: 0x000000,
           emissive: 0x553333,
-        }),
+        }), 0.8, 0.7),
         0 // mass
     );
   ground.rotation.set(Math.PI / 2, 0, 0);

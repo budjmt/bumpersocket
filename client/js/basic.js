@@ -1,4 +1,7 @@
 
+const aboutEqual = (a, b) => Math.abs(a - b) < 0.001;
+const aboutEqual3 = (a, b) => aboutEqual(a.x, b.x) && aboutEqual(a.y, b.y) && aboutEqual(a.z, b.z);
+
 class Uniform {
   constructor(typeStr) {
     this.type = typeStr;
@@ -17,7 +20,7 @@ class Scene {
     this.scene = scene;
     this.update = undefined;
     this.reset = undefined;
-	this.scene.addEventListener('update', this.simulate.bind(this));
+	  this.scene.addEventListener('update', this.simulate.bind(this));
   }
 
   simulate() {
@@ -55,6 +58,7 @@ class Player {
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
     this.customUpdate = undefined;
+    this.nextState = undefined;
   }
 
   instantiate() {
@@ -77,14 +81,27 @@ class Player {
       time: new Date().getTime(),
       position: this.gameObject.position,
       rotation: this.gameObject.rotation,
-      linearVelocity: this.gameObject.getLinearVelocity(),
-      angularVelocity: this.gameObject.getAngularVelocity(),
+      linearVel:  this.gameObject.getLinearVelocity(),
+      angularVel: this.gameObject.getAngularVelocity()
     };
+  }
+
+  adjustState() {
+    if(!this.nextState) return;
+    this.gameObject.position.lerp(this.nextState.position, 0.2);
+    const newRot = new THREE.Vector3(this.gameObject.rotation.x, this.gameObject.rotation.y, this.gameObject.rotation.z);
+    newRot.lerp(this.nextState.rotation, 0.2);
+    this.gameObject.rotation.set(newRot.x, newRot.y, newRot.z);
+    //this.gameObject.quaternion.slerp(nextState.rotation, 0.2);
+    this.gameObject.__dirtyPosition = this.gameObject.__dirtyRotation = true;
+    if(new Date().getTime() - this.nextState.time > 50)
+      this.nextState = null;
   }
 
   update() {
     this.gameObject.applyCentralForce(this.direction);
     this.direction.set(0, 0, 0);
+    this.adjustState();
     if(this.customUpdate) this.customUpdate();
   }
 

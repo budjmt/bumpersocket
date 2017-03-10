@@ -29,6 +29,7 @@
     const randColor = () => hexShift(randRange(0,256) | 0, 4) + hexShift(randRange(0,256) | 0, 2) + (randRange(0,256) | 0);
 
     const getVector3 = (obj) => new THREE.Vector3(obj.x, obj.y, obj.z);
+    const getQuat = (obj) => new THREE.Quaternion(obj.x, obj.y, obj.z, obj.w);
 
     let socket;
     let name;
@@ -43,21 +44,24 @@
         })
 
         socket.on('update', (data) => {
-            if(Object.hasOwnProperty.call(players, data.name) && data.time > players[data.name].lastUpdate) {
-                players[data.name].lastUpdate = data.time;
+            if(players[data.name] && data.time > players[data.name].lastUpdate) {
+                const player = players[data.name];
+                player.lastUpdate = data.time;
                 
-                const go = players[data.name].gameObject;
-                go.position.set(data.position.x, data.position.y, data.position.z);
-                go.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
-                go.__dirtyPosition = go.__dirtyRotation = true;
+                const go = player.gameObject;
+                player.nextState = { time: data.time, position: getVector3(data.position), rotation: getVector3(data.rotation) };
 
-                go.setLinearVelocity(getVector3(data.linearVelocity));
-                go.setAngularVelocity(getVector3(data.angularVelocity));
+                //go.position.set(data.position.x, data.position.y, data.position.z);
+                //go.quaternion.set(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w);
+                //go.__dirtyPosition = go.__dirtyRotation = true;
+
+                go.setLinearVelocity(data.linearVel);
+                go.setAngularVelocity(data.angularVel);
             }
         });
 
         socket.on('lose', (data) => {
-            if(Object.hasOwnProperty.call(players, data)) {
+            if(players[data]) {
                 console.log(`${data} lost`);
                 players[data].destroy();
             }

@@ -14,7 +14,7 @@ const playerCount = 0;
 const scene = new Physijs.Scene();
 scene.setGravity(new THREE.Vector3(0, -9.8, 0));
 const ground = new Physijs.BoxMesh(
-  new THREE.CubeGeometry(20, 20, 1), new THREE.MeshBasicMaterial(), 0);
+  new THREE.CubeGeometry(20, 20, 1), Physijs.createMaterial(new THREE.MeshBasicMaterial(), 0.8, 0.7), 0);
 ground.rotation.set(Math.PI / 2, 0, 0);
 scene.add(ground);
 scene.addEventListener('update', () => {
@@ -70,8 +70,8 @@ class Player {
       time: new Date().getTime(),
       position: this.gameObject.position,
       rotation: this.gameObject.rotation,
-      linearVelocity: this.gameObject.getLinearVelocity(),
-      angularVelocity: this.gameObject.getAngularVelocity() };
+      linearVel:  this.gameObject.getLinearVelocity(),
+      angularVel: this.gameObject.getAngularVelocity() };
   }
 
   update() {
