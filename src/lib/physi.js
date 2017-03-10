@@ -1,4 +1,4 @@
-window.Physijs = (function() {
+module.exports = function(THREE, Ammo) {
 	'use strict';
 
 	var SUPPORT_TRANSFERABLE,
@@ -390,18 +390,7 @@ window.Physijs = (function() {
 		Eventable.call( this );
 		THREE.Scene.call( this );
 
-		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
-		this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
-		this._materials_ref_counts = {};
-		this._objects = {};
-		this._vehicles = {};
-		this._constraints = {};
-
-		var ab = new ArrayBuffer( 1 );
-		this._worker.transferableMessage( ab, [ab] );
-		SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
-
-		this._worker.onmessage = function ( event ) {
+    var workerToSceneMessageHandler = function ( event ) {
 			var _temp,
 				data = event.data;
 
@@ -482,6 +471,107 @@ window.Physijs = (function() {
 
 			}
 		};
+    
+		//this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
+		//this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
+    
+    	this._worker = require('./physijs_worker.js')(workerToSceneMessageHandler, Ammo);
+		var _worker = this._worker;
+		this._worker.postMessage = function(x) {
+			_worker.sceneToWorkerMessageHandler({data:x});
+		};
+		this._worker.transferableMessage = this._worker.postMessage;
+    
+		this._materials_ref_counts = {};
+		this._objects = {};
+		this._vehicles = {};
+		this._constraints = {};
+
+		var ab = new ArrayBuffer( 1 );
+		this._worker.transferableMessage( ab, [ab] );
+		SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
+
+		/*this._worker.onmessage = function ( event ) {
+			var _temp,
+				data = event.data;
+
+			if ( data instanceof ArrayBuffer && data.byteLength !== 1 ) { // byteLength === 1 is the worker making a SUPPORT_TRANSFERABLE test
+				data = new Float32Array( data );
+			}
+
+			if ( data instanceof Float32Array ) {
+
+				// transferable object
+				switch ( data[0] ) {
+					case MESSAGE_TYPES.WORLDREPORT:
+						self._updateScene( data );
+						break;
+
+					case MESSAGE_TYPES.COLLISIONREPORT:
+						self._updateCollisions( data );
+						break;
+
+					case MESSAGE_TYPES.VEHICLEREPORT:
+						self._updateVehicles( data );
+						break;
+
+					case MESSAGE_TYPES.CONSTRAINTREPORT:
+						self._updateConstraints( data );
+						break;
+				}
+
+			} else {
+
+				if ( data.cmd ) {
+
+					// non-transferable object
+					switch ( data.cmd ) {
+						case 'objectReady':
+							_temp = data.params;
+							if ( self._objects[ _temp ] ) {
+								self._objects[ _temp ].dispatchEvent( 'ready' );
+							}
+							break;
+
+						case 'worldReady':
+							self.dispatchEvent( 'ready' );
+							break;
+
+						case 'vehicle':
+							window.test = data;
+							break;
+
+						default:
+							// Do nothing, just show the message
+							console.debug('Received: ' + data.cmd);
+							console.dir(data.params);
+							break;
+					}
+
+				} else {
+
+					switch ( data[0] ) {
+						case MESSAGE_TYPES.WORLDREPORT:
+							self._updateScene( data );
+							break;
+
+						case MESSAGE_TYPES.COLLISIONREPORT:
+							self._updateCollisions( data );
+							break;
+
+						case MESSAGE_TYPES.VEHICLEREPORT:
+							self._updateVehicles( data );
+							break;
+
+						case MESSAGE_TYPES.CONSTRAINTREPORT:
+							self._updateConstraints( data );
+							break;
+					}
+
+				}
+
+			}
+		};*/
 
 
 		params = params || {};
@@ -645,8 +735,10 @@ window.Physijs = (function() {
 		for ( id1 in this._objects ) {
 			if ( !this._objects.hasOwnProperty( id1 ) ) continue;
 			object = this._objects[ id1 ];
+
 			// If object touches anything, ...
 			if ( collisions[ id1 ] ) {
+
 				// Clean up touches array
 				for ( j = 0; j < object._physijs.touches.length; j++ ) {
 					if ( collisions[ id1 ].indexOf( object._physijs.touches[j] ) === -1 ) {
@@ -1398,4 +1490,4 @@ window.Physijs = (function() {
 	};
 
 	return Physijs;
-})();
+};

@@ -1,6 +1,8 @@
 'use strict';
+module.exports = function(workerToSceneMessageHandler, Ammo) {
 var
-	transferableMessage = self.webkitPostMessage || self.postMessage,
+	//transferableMessage = self.webkitPostMessage || self.postMessage,
+  transferableMessage = function(x) {workerToSceneMessageHandler({data:x})},
 
 	// enum
 	MESSAGE_TYPES = {
@@ -240,7 +242,7 @@ createShape = function( description ) {
 };
 
 public_functions.init = function( params ) {
-	importScripts( params.ammo );
+	//importScripts( params.ammo );
 
 	_transform = new Ammo.btTransform;
 	_vec3_1 = new Ammo.btVector3(0,0,0);
@@ -1381,7 +1383,7 @@ reportConstraints = function() {
 
 };
 
-self.onmessage = function( event ) {
+var onmessage = function( event ) {
 
 	if ( event.data instanceof Float32Array ) {
 		// transferable object
@@ -1411,5 +1413,7 @@ self.onmessage = function( event ) {
 		//if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
 		public_functions[event.data.cmd]( event.data.params );
 	}
+};
 
+return { sceneToWorkerMessageHandler: onmessage };
 };

@@ -29,7 +29,7 @@
     const randColor = () => hexShift(randRange(0,256) | 0, 4) + hexShift(randRange(0,256) | 0, 2) + (randRange(0,256) | 0);
 
     const getVector3 = (obj) => new THREE.Vector3(obj.x, obj.y, obj.z);
-    const getQuat = (obj) => new THREE.Quaternion(obj.x, obj.y, obj.z, obj.w);
+    const getQuat = (obj) => new THREE.Quaternion(obj._x, obj._y, obj._z, obj._w);
 
     let socket;
     let name;
@@ -49,14 +49,10 @@
                 player.lastUpdate = data.time;
                 
                 const go = player.gameObject;
-                player.nextState = { time: data.time, position: getVector3(data.position), rotation: getVector3(data.rotation) };
+                player.nextState = { time: data.time, position: getVector3(data.position), rotation: getQuat(data.rotation) };
 
-                //go.position.set(data.position.x, data.position.y, data.position.z);
-                //go.quaternion.set(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w);
-                //go.__dirtyPosition = go.__dirtyRotation = true;
-
-                go.setLinearVelocity(data.linearVel);
-                go.setAngularVelocity(data.angularVel);
+                player.linearVel = data.linearVel;
+                player.angularVel = data.angularVel;
             }
         });
 
@@ -79,6 +75,7 @@
 
         window.addEventListener('keydown', (e) => inputs[e.keyCode] = true);
         window.addEventListener('keyup',   (e) => inputs[e.keyCode] = false);
+        window.addEventListener('blur', (e) => Object.keys(inputs).forEach(keyCode => inputs[keyCode] = false));
 
         const playerUpdate = function() {
             let dir = new THREE.Vector3(0,0,0);

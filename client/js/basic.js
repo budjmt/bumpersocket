@@ -53,13 +53,20 @@ class Player {
           emissive: 0x222222
         }), 0.8, 0.7)
     );
+    this.gameObject.name = 'car';
     this.gameObject.position.set(position.x, position.y, position.z);
-    //this.gameObject.addEventListener('collision', this.onCollision.bind(this));
+    this.gameObject.addEventListener('collision', this.onCollision.bind(this));
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
     this.customUpdate = undefined;
     this.nextState = undefined;
   }
+
+  get linearVel() { return this.gameObject.getLinearVelocity(); }
+  set linearVel(val) { this.gameObject.setLinearVelocity(val); }
+
+  get angularVel() { return this.gameObject.getAngularVelocity(); }
+  set angularVel(val) { this.gameObject.setAngularVelocity(val); }
 
   instantiate() {
     if (this.added) return;
@@ -80,7 +87,7 @@ class Player {
       name: this.name,
       time: new Date().getTime(),
       position: this.gameObject.position,
-      rotation: this.gameObject.rotation,
+      rotation: this.gameObject.quaternion,
       linearVel:  this.gameObject.getLinearVelocity(),
       angularVel: this.gameObject.getAngularVelocity()
     };
@@ -88,25 +95,34 @@ class Player {
 
   adjustState() {
     if(!this.nextState) return;
-    this.gameObject.position.lerp(this.nextState.position, 0.2);
-    const newRot = new THREE.Vector3(this.gameObject.rotation.x, this.gameObject.rotation.y, this.gameObject.rotation.z);
-    newRot.lerp(this.nextState.rotation, 0.2);
-    this.gameObject.rotation.set(newRot.x, newRot.y, newRot.z);
-    //this.gameObject.quaternion.slerp(nextState.rotation, 0.2);
+    this.gameObject.position.lerp(this.nextState.position, 0.3);
+    this.gameObject.quaternion.slerp(this.nextState.rotation, 0.3);
     this.gameObject.__dirtyPosition = this.gameObject.__dirtyRotation = true;
     if(new Date().getTime() - this.nextState.time > 50)
       this.nextState = null;
   }
 
+  applyFriction() {
+    let av = this.angularVel.multiplyScalar(0.8);
+    if(av.length() < 0.001) av.set(0, 0, 0);
+    this.angularVel = av;
+  }
+
   update() {
     this.gameObject.applyCentralForce(this.direction);
+    if(this.direction.length() === 0) this.applyFriction();
     this.direction.set(0, 0, 0);
     this.adjustState();
     if(this.customUpdate) this.customUpdate();
   }
 
   onCollision(other, relVel, relRot, contactNormal) {
-        // check if other object is a player
+    // check if other object is a player
+    if(other.name === 'car') {
+      let v = contactNormal;
+      v.setLength(20);
+      other.applyCentralForce(v);
+    }
   }
 
   updateDirection(input) {
