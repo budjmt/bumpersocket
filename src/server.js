@@ -2,7 +2,6 @@ const http = require('http');
 const path = require('path');
 const socketio = require('socket.io');
 const express = require('express');
-const common = require('./common.js');
 const game = require('./game.js');
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
@@ -40,7 +39,9 @@ const pushUpdates = () => {
     game.gameOver = false;
   }
 
-  Object.keys(game.players).forEach(player => io.sockets.in('room1').emit('update', game.players[player].packet));
+  const updatePacket = [];
+  Object.keys(game.players).forEach(player => updatePacket.push(game.players[player].packet));
+  io.sockets.in('room1').emit('update', { players: updatePacket, time: new Date().getTime() });
 };
 
 setInterval(pushUpdates, 1000 / 60);
@@ -56,26 +57,24 @@ const onJoin = (sock) => {
     console.log(data.name);
     game.playerCount++;
     const player = new game.Player(socket.name, data.color, data.position);
+
     Object.keys(game.players).forEach((otherPlayerName) => {
       const otherPlayer = game.players[otherPlayerName];
-      const packet = otherPlayer.packet;
-      packet.color = otherPlayer.color;
-      socket.emit('add', { player: packet, time: new Date().getTime() });
+      socket.emit('add', { player: otherPlayer.packet, color: otherPlayer.color, time: new Date().getTime() });
     });
     player.instantiate();
 
     socket.emit('connectSuccess', null);
-    const packet = player.packet;
-    packet.color = data.color;
-    socket.broadcast.to('room1').emit('add', { player: packet, time: new Date().getTime() });
+    socket.broadcast.to('room1').emit('add', { player: player.packet, color: data.color, time: new Date().getTime() });
   });
 };
 
 const onInput = (sock) => {
   const socket = sock;
   socket.on('input', (data) => {
-    if (game.players[data.name]) {
-      game.players[data.name].updateDirection(data.input);
+    const player = game.players[data.name];
+    if (player) {
+      player.updateDirection(data.input);
     }
   });
 };
@@ -84,8 +83,9 @@ const onDisconnect = (sock) => {
   const socket = sock;
   socket.on('disconnect', () => {
     // check that the user successfully joined before deleting
-    if (game.players[socket.name]) {
-      game.players[socket.name].destroy();
+    const player = game.players[socket.name];
+    if (player) {
+      player.destroy();
       io.sockets.in('room1').emit('lose', socket.name);
       game.playerCount--;
     }
@@ -101,5 +101,3 @@ io.sockets.on('connection', (socket) => {
 });
 
 console.log('Websocket server started');
-
-// game.simulate();

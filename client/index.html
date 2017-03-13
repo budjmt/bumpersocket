@@ -38,22 +38,22 @@
         socket = io.connect();
 
         socket.on('add', data => {
-            let player = new Player(data.player.name, data.player.color, data.player.position);
+            let player = new Player(data.player.name, data.color, data.player.position);
             player.lastUpdate = data.time;
             player.instantiate();
-        })
+        });
 
         socket.on('update', (data) => {
-            if(players[data.name] && data.time > players[data.name].lastUpdate) {
-                const player = players[data.name];
-                player.lastUpdate = data.time;
-                
-                const go = player.gameObject;
-                player.nextState = { time: data.time, position: getVector3(data.position), rotation: getQuat(data.rotation) };
+            data.players.forEach(playerData => {
+                const player = players[playerData.name];
 
-                player.linearVel = data.linearVel;
-                player.angularVel = data.angularVel;
-            }
+                if(player && data.time > player.lastUpdate) {
+                    player.lastUpdate = data.time;
+
+                    const go = player.gameObject;
+                    player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
+                }
+            });
         });
 
         socket.on('lose', (data) => {
@@ -102,12 +102,10 @@
         let joinData = { 
             name:  getName()
           , color: randColor()
-          , position: new THREE.Vector3(
-              randRange(-5, 5), 5, randRange(-5, 5)
-            ) 
+          , position: new THREE.Vector3(randRange(-5, 5), 5, randRange(-5, 5)) 
         };
         socket.on('connectFail', () => {
-            joinData.name = getName;
+            joinData.name = getName();
             socket.emit('join', joinData);
         });
         socket.on('connectSuccess', () => {

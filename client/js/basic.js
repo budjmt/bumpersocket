@@ -85,11 +85,8 @@ class Player {
   get packet() {
     return {
       name: this.name,
-      time: new Date().getTime(),
       position: this.gameObject.position,
-      rotation: this.gameObject.quaternion,
-      linearVel:  this.gameObject.getLinearVelocity(),
-      angularVel: this.gameObject.getAngularVelocity()
+      rotation: this.gameObject.quaternion
     };
   }
 
