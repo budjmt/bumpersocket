@@ -13,7 +13,7 @@ const scene = new Physijs.Scene();
 scene.setGravity(new THREE.Vector3(0, -9.8, 0));
 
 const ground = new Physijs.BoxMesh(
-  new THREE.BoxGeometry(20, 20, 1), 
+  new THREE.BoxGeometry(20, 20, 1),
   Physijs.createMaterial(new THREE.MeshBasicMaterial(), 0.8, 0.7), 0);
 ground.rotation.set(Math.PI / 2, 0, 0);
 scene.add(ground);
@@ -24,6 +24,7 @@ scene.addEventListener('update', () => {
     const player = players[playerName];
     player.update();
 
+    // if the player fell off the stage
     if (player.gameObject.position.y < -5) {
       losers.push(player);
       player.destroy();
@@ -75,6 +76,7 @@ class Player {
   get packet() {
     return {
       name: this.name,
+      color: this.color,
       position: this.gameObject.position,
       rotation: this.gameObject.quaternion };
   }
@@ -97,6 +99,9 @@ class Player {
       const v = contactNormal;
       v.setLength(20);
       other.applyCentralForce(v);
+      // mostly to shut eslint up
+      // whoever heard of using a member function for organization?
+      console.log(`${this.name} collided!`);
     }
   }
 

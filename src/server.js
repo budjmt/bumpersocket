@@ -27,7 +27,6 @@ const pushUpdates = () => {
   while (game.losers.length > 0) {
     const name = game.losers.pop().name;
     console.log(`${name} lost`);
-    io.sockets.in('room1').emit('lose', name);
   }
 
   if (game.gameOver) {
@@ -55,17 +54,17 @@ const onJoin = (sock) => {
     }
     socket.name = data.name;
     console.log(data.name);
-    game.playerCount++;
+
     const player = new game.Player(socket.name, data.color, data.position);
-
-    Object.keys(game.players).forEach((otherPlayerName) => {
-      const otherPlayer = game.players[otherPlayerName];
-      socket.emit('add', { player: otherPlayer.packet, color: otherPlayer.color, time: new Date().getTime() });
-    });
     player.instantiate();
+    game.playerCount++;
 
+    // the upside of not sending a specific add event is easier portability to UDP
+    // the downside is that it requires sending color with every player packet (4 bytes)
+    // best of both worlds might be having add/lose require confirmation from the client
+    // or making them specifically TCP
+    // probably premature optimization
     socket.emit('connectSuccess', null);
-    socket.broadcast.to('room1').emit('add', { player: player.packet, color: data.color, time: new Date().getTime() });
   });
 };
 
@@ -86,7 +85,6 @@ const onDisconnect = (sock) => {
     const player = game.players[socket.name];
     if (player) {
       player.destroy();
-      io.sockets.in('room1').emit('lose', socket.name);
       game.playerCount--;
     }
   });

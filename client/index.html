@@ -37,30 +37,26 @@
     const init = () => {
         socket = io.connect();
 
-        socket.on('add', data => {
-            let player = new Player(data.player.name, data.color, data.player.position);
-            player.lastUpdate = data.time;
-            player.instantiate();
-        });
-
         socket.on('update', (data) => {
             data.players.forEach(playerData => {
-                const player = players[playerData.name];
+                let player = players[playerData.name];
 
-                if(player && data.time > player.lastUpdate) {
+                // update
+                if(player) {
+                    if (data.time > player.lastUpdate) {
+                        player.lastUpdate = data.time;
+
+                        const go = player.gameObject;
+                        player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
+                    }
+                }
+                // add
+                else {
+                    player = new Player(playerData.name, playerData.color, playerData.position);
                     player.lastUpdate = data.time;
-
-                    const go = player.gameObject;
-                    player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
+                    player.instantiate();
                 }
             });
-        });
-
-        socket.on('lose', (data) => {
-            if(players[data]) {
-                console.log(`${data} lost`);
-                players[data].destroy();
-            }
         });
 
         socket.on('win', (data) => {
@@ -95,8 +91,17 @@
         };
 
         scene.scene.addEventListener('update', () => {
-            for(let playerName in players) 
-                players[playerName].update();
+            for(let playerName in players) {
+                const player = players[playerName];
+                // if an update hasn't been received in 0.5 seconds, remove the player
+                if(new Date().getTime() - player.lastUpdate > 500) {
+                    console.log(`${player.name} lost`);
+                    player.destroy();
+                }
+                else {
+                    player.update();
+                }
+            }
         })
 
         let joinData = { 
