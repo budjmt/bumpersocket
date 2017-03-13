@@ -93,8 +93,9 @@
         scene.scene.addEventListener('update', () => {
             for(let playerName in players) {
                 const player = players[playerName];
-                // if an update hasn't been received in 0.5 seconds, remove the player
-                if(new Date().getTime() - player.lastUpdate > 500) {
+                // if an update hasn't been received in 5000 seconds, remove the player
+                // the period should probably be closer to 0.5 seconds, but it causes weird behavior in the web build
+                if(new Date().getTime() - player.lastUpdate > 5000) {
                     console.log(`${player.name} lost`);
                     player.destroy();
                 }
