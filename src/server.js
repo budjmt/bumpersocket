@@ -22,56 +22,63 @@ app.get('/', (req, res) => res.sendFile('index.html', getOptions()));
 console.log(`Listening on 127.0.0.1: ${port}`);
 
 const io = socketio(httpServer);
+const rooms = {};
 
-const pushUpdates = () => {
-  while (game.losers.length > 0) {
-    const name = game.losers.pop().name;
+const pushUpdates = (scene, room) => {
+  while (scene.losers.length > 0) {
+    const name = scene.losers.pop().name;
     console.log(`${name} lost`);
   }
 
-  if (game.gameOver) {
-    if (game.winner) {
-      io.sockets.in('room1').emit('win', game.winner);
+  if (scene.gameOver) {
+    if (scene.winner) {
+      io.sockets.in(room).emit('win', scene.winner);
     }
-    Object.keys(game.players).forEach(player => game.players[player].destroy());
-    io.sockets.in('room1').emit('gameOver', null);
-    game.gameOver = false;
+    scene.reset();
+    io.sockets.in(room).emit('gameOver');
   }
 
-  const updatePacket = [];
-  Object.keys(game.players).forEach(player => updatePacket.push(game.players[player].packet));
-  io.sockets.in('room1').emit('update', { players: updatePacket, time: new Date().getTime() });
-};
+  const updatePacket = Object.keys(scene.players).map(player => scene.players[player].packet);
+  io.sockets.in(room).emit('update', { players: updatePacket, time: new Date().getTime() });
 
-setInterval(pushUpdates, 1000 / 60);
+  const expireTime = 5 * 60 * 1000; // 5 minutes
+  if (scene.playerCount < 1 && new Date().getTime() - scene.lastDisconnect > expireTime) {
+    clearInterval(scene.pushInterval);
+    scene.destroy();
+  }
+};
 
 const onJoin = (sock) => {
   const socket = sock;
   socket.on('join', (data) => {
-    if (game.players[data.name]) {
+    const scene = rooms[data.room];
+    if (scene.players[data.name]) {
       socket.emit('connectFail', 'That username is already in use, try another');
       return;
     }
     socket.name = data.name;
+    socket.room = data.room;
+    socket.join(socket.room);
     console.log(data.name);
+    // console.dir(io);
 
     const player = new game.Player(socket.name, data.color, data.position);
-    player.instantiate();
-    game.playerCount++;
+    player.instantiate(scene);
+    scene.playerCount++;
 
     // the upside of not sending a specific add event is easier portability to UDP
     // the downside is that it requires sending color with every player packet (4 bytes)
     // best of both worlds might be having add/lose require confirmation from the client
     // or making them specifically TCP
     // probably premature optimization
-    socket.emit('connectSuccess', null);
+    socket.emit('connectSuccess');
   });
 };
 
 const onInput = (sock) => {
   const socket = sock;
   socket.on('input', (data) => {
-    const player = game.players[data.name];
+    const player = rooms[socket.room].players[data.name];
     if (player) {
       player.updateDirection(data.input);
     }
@@ -82,17 +89,38 @@ const onDisconnect = (sock) => {
   const socket = sock;
   socket.on('disconnect', () => {
     // check that the user successfully joined before deleting
-    const player = game.players[socket.name];
+    if (!socket.room) return;
+    const scene = rooms[socket.room];
+    const player = scene.players[socket.name];
     if (player) {
-      player.destroy();
-      game.playerCount--;
+      player.destroy(scene);
+      scene.lastDisconnect = new Date().getTime();
+      scene.playerCount--;
     }
+  });
+};
+
+const onRoom = (sock) => {
+  const socket = sock;
+  socket.on('getRooms', () => {
+    socket.emit('roomList', Object.keys(io.sockets.adapter.rooms).filter(room => rooms[room]));
+  });
+
+  socket.on('createRoom', (roomName) => {
+    if (Object.keys(io.sockets.adapter.rooms).find(room => room === roomName)) {
+      socket.emit('roomCreateFailure');
+      return;
+    }
+    const scene = new game.Scene();
+    rooms[roomName] = scene;
+    scene.pushInterval = setInterval(() => pushUpdates(scene, roomName), 1000 / 60);
+    socket.emit('roomCreateSuccess', roomName);
   });
 };
 
 io.sockets.on('connection', (socket) => {
   console.log('started');
-  socket.join('room1');
+  onRoom(socket);
   onJoin(socket);
   onInput(socket);
   onDisconnect(socket);

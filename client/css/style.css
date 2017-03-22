@@ -73,3 +73,39 @@ canvas {
 	opacity: 0;
 	pointer-events: none;
 }
+
+#roomSelect {
+	position: absolute;
+	height: 100%;
+	width: 80%;
+	top: 0; 
+	left: 0; right: 0;
+	margin: 0 auto;
+}
+
+#rooms li, #createRoom, #refreshRooms {
+	border-radius: 25px;
+	border: 5px solid black;
+	box-shadow: 0px 20px 20px 2px rgba(96,96,96,0.3);
+	background-color: white;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+	cursor: pointer;
+
+	font-family: "arial narrow", sans-serif;
+	letter-spacing: 0.05em;
+	font-size: 16pt;
+	text-align: center;
+	
+	padding: 30px 5px;
+	width: 50%;
+	min-height: 150px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+	transition: all 0.5s;
+	margin: 0px auto;
+	z-index: 1;
+}

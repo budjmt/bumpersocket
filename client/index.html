@@ -45,6 +45,7 @@
                 if(player) {
                     if (data.time > player.lastUpdate) {
                         player.lastUpdate = data.time;
+                        player.updateScore(data.score);
 
                         const go = player.gameObject;
                         player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
@@ -105,31 +106,84 @@
             }
         })
 
-        let joinData = { 
-            name:  getName()
-          , color: randColor()
-          , position: new THREE.Vector3(randRange(-5, 5), 5, randRange(-5, 5)) 
-        };
-        socket.on('connectFail', () => {
-            joinData.name = getName();
-            socket.emit('join', joinData);
-        });
-        socket.on('connectSuccess', () => {
-            name = joinData.name;
-            const player = new Player(joinData.name, joinData.color, joinData.position);
-            player.customUpdate = playerUpdate.bind(player);
-            player.instantiate();
-        });
+        const connectToRoom = (roomName, roomDiv) => {
+            let joinData = { 
+                name:  getName()
+              , color: randColor()
+              , room: roomName
+              , position: new THREE.Vector3(randRange(-5, 5), 5, randRange(-5, 5)) 
+            };
 
-        socket.emit('join', joinData);
+            socket.on('connectFail', () => {
+                joinData.name = getName();
+                socket.emit('join', joinData);
+            });
+
+            socket.on('connectSuccess', () => {
+                name = joinData.name;
+                const player = new Player(joinData.name, joinData.color, joinData.position);
+                player.customUpdate = playerUpdate.bind(player);
+                roomDiv.innerHTML = '';
+                player.instantiate();
+            });
+
+            socket.emit('join', joinData);
+        };
+
+        const instantiateRoom = (name, list, roomDiv) => {
+            let element = document.createElement('li');
+            element.innerHTML = name;
+            element.onclick = () => connectToRoom(name, roomDiv);
+            list.appendChild(element);
+        };
+
+        const initUI = () => {
+            const roomSelect = document.querySelector('#roomSelect');
+            const rooms = document.querySelector('#rooms');
+            const create = document.querySelector('#createRoom');
+            const roomName = create.querySelector('#roomName');
+        
+            const failMess = document.createElement('p');
+            failMess.style = 'color: red';
+            failMess.innerHTML = 'That room name is invalid';
+
+            create.onclick = () => {
+                try { create.removeChild(failMess); } catch(e) {} // lol
+                if(roomName.value.length > 0)
+                    socket.emit('createRoom', roomName.value);
+            };
+
+            socket.on('roomList', data => {
+                rooms.innerHTML = '';
+                data.forEach(name => instantiateRoom(name, rooms, roomSelect));
+            });
+
+            socket.on('roomCreateSuccess', name => connectToRoom(name, roomSelect));
+            socket.on('roomCreateFailure', () => create.appendChild(failMess));
+
+            const refreshRooms = document.querySelector('#refreshRooms');
+            refreshRooms.onclick = () => socket.emit('getRooms');
+            refreshRooms.onclick();
+        };
+
+        initUI(socket);
     };
 
-    window.onload = init;
+    window.addEventListener('load', init);
     </script>
 </head>
 <body>
-    <canvas style="border: 2px solid black">Dumb browser, get a new one</canvas>
+    <canvas>Dumb browser, get a new one</canvas>
     <div id="pop_ups"></div>
+    <div id="roomSelect">
+        <ul id="rooms">
+        </ul>
+        <button id="refreshRooms">Refresh</button>
+        <button id="createRoom">
+            <input id="roomName" type="text"></input>
+            <p>Create Room</p>
+        </button>
+    </div>
     <h3 style="position: absolute; top: 20px; left: 20px">WASD to move</h3>
 </body>
 </html>

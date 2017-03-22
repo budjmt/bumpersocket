@@ -9,6 +9,7 @@
   "main": "./src/server.js",
   "scripts": {
     "addLint": "npm install --save-dev eslint eslint-config-airbnb eslint-plugin-import",
+    "nodemon": "nodemon --watch ./src ./src/server.js",
     "start": "node ./src/server.js",
     "stop": "taskkill /f /im node.exe",
     "pretest": "eslint --fix ./src",
@@ -27,7 +28,8 @@
   "devDependencies": {
     "eslint": "^3.16.1",
     "eslint-config-airbnb": "^14.1.0",
-    "eslint-plugin-import": "^2.2.0"
+    "eslint-plugin-import": "^2.2.0",
+    "nodemon": "^1.11.0"
   },
   "dependencies": {
     "ammo-node": "^1.0.0",

@@ -60,6 +60,7 @@ class Player {
     this.lastUpdate = new Date().getTime();
     this.customUpdate = undefined;
     this.nextState = undefined;
+    this.score = 0;
   }
 
   get linearVel() { return this.gameObject.getLinearVelocity(); }
@@ -85,6 +86,8 @@ class Player {
   get packet() {
     return {
       name: this.name,
+      color: this.color,
+      score: this.score,
       position: this.gameObject.position,
       rotation: this.gameObject.quaternion
     };
@@ -120,6 +123,10 @@ class Player {
       v.setLength(20);
       other.applyCentralForce(v);
     }
+  }
+
+  updateScore(score) {
+    this.score = score;
   }
 
   updateDirection(input) {
