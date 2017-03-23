@@ -32,7 +32,7 @@ const pushUpdates = (scene, room) => {
 
   if (scene.gameOver) {
     if (scene.winner) {
-      io.sockets.in(room).emit('win', scene.winner);
+      //io.sockets.in(room).emit('win', scene.winner);
     }
     scene.reset();
     io.sockets.in(room).emit('gameOver');
@@ -41,10 +41,11 @@ const pushUpdates = (scene, room) => {
   const updatePacket = Object.keys(scene.players).map(player => scene.players[player].packet);
   io.sockets.in(room).emit('update', { players: updatePacket, time: new Date().getTime() });
 
-  const expireTime = 5 * 60 * 1000; // 5 minutes
+  const expireTime = 2 * 60 * 1000; // 2 minutes
   if (scene.playerCount < 1 && new Date().getTime() - scene.lastDisconnect > expireTime) {
     clearInterval(scene.pushInterval);
     scene.destroy();
+    delete rooms[room];
   }
 };
 
@@ -52,6 +53,10 @@ const onJoin = (sock) => {
   const socket = sock;
   socket.on('join', (data) => {
     const scene = rooms[data.room];
+    if(!scene) {
+      socket.emit('roomList', Object.keys(rooms));
+      return;
+    }
     if (scene.players[data.name]) {
       socket.emit('connectFail', 'That username is already in use, try another');
       return;
@@ -103,11 +108,11 @@ const onDisconnect = (sock) => {
 const onRoom = (sock) => {
   const socket = sock;
   socket.on('getRooms', () => {
-    socket.emit('roomList', Object.keys(io.sockets.adapter.rooms).filter(room => rooms[room]));
+    socket.emit('roomList', Object.keys(rooms));
   });
 
   socket.on('createRoom', (roomName) => {
-    if (Object.keys(io.sockets.adapter.rooms).find(room => room === roomName)) {
+    if (Object.keys(rooms).find(room => room === roomName) || Object.keys(io.sockets.adapter.rooms).find(room => room === roomName)) {
       socket.emit('roomCreateFailure');
       return;
     }

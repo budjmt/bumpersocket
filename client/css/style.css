@@ -83,6 +83,20 @@ canvas {
 	margin: 0 auto;
 }
 
+#roomSelect {
+	height: 100%;
+	margin: 0px auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-flow: column wrap;
+}
+
+#rooms {
+	padding: 0;
+	width: 100%;
+}
+
 #rooms li, #createRoom, #refreshRooms {
 	border-radius: 25px;
 	border: 5px solid black;
@@ -100,12 +114,22 @@ canvas {
 	
 	padding: 30px 5px;
 	width: 50%;
-	min-height: 150px;
+	min-height: 75px;
 	display: flex;
+	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	
 	transition: all 0.5s;
 	margin: 0px auto;
 	z-index: 1;
+}
+
+#rooms li {
+	min-height: 50px;
+}
+
+#roomName {
+	text-align: center;
+	height: 30px;
 }
