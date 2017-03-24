@@ -51,6 +51,7 @@ const pushUpdates = (scene, room) => {
 
 const onJoin = (sock) => {
   const socket = sock;
+  socket.playersSpawned = 0;  
   socket.on('join', (data) => {
     const scene = rooms[data.room];
     if (!scene) {
@@ -70,6 +71,7 @@ const onJoin = (sock) => {
     const player = new game.Player(socket.name, data.color, data.position);
     player.instantiate(scene);
     scene.playerCount++;
+    socket.playersSpawned++;
 
     // the upside of not sending a specific add event is easier portability to UDP
     // the downside is that it requires sending color with every player packet (4 bytes)
@@ -99,9 +101,9 @@ const onDisconnect = (sock) => {
     const player = scene.players[socket.name];
     if (player) {
       player.destroy(scene);
-      scene.lastDisconnect = new Date().getTime();
-      scene.playerCount--;
     }
+    scene.lastDisconnect = new Date().getTime();
+    scene.playerCount -= socket.playersSpawned;
   });
 };
 

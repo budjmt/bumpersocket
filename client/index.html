@@ -115,6 +115,7 @@
             };
 
             let firstConnect = true;
+            let respawn;
 
             socket.on('connectFail', () => {
                 joinData.name = getName();
@@ -128,15 +129,15 @@
                 roomDiv.innerHTML = '';
 
                 if(firstConnect) {
-                    let respawn = document.createElement('button');
+                    respawn = document.createElement('button');
                     respawn.innerHTML = 'Respawn';
-                    respawn.onclick = () => {
-                        if(player.added) return;
-                        socket.emit('join', joinData);
-                    };
                     document.querySelector('#respawn').appendChild(respawn);
                 }
 
+                respawn.onclick = () => {
+                    if(player.added) return; // have to renew the player reference
+                    socket.emit('join', joinData);
+                };
                 player.instantiate();
                 firstConnect = false;
             });
