@@ -45,7 +45,7 @@
                 if(player) {
                     if (data.time > player.lastUpdate) {
                         player.lastUpdate = data.time;
-                        player.updateScore(data.score);
+                        player.updateScore(playerData.score);
 
                         const go = player.gameObject;
                         player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
@@ -114,6 +114,8 @@
               , position: new THREE.Vector3(randRange(-5, 5), 5, randRange(-5, 5)) 
             };
 
+            let firstConnect = true;
+
             socket.on('connectFail', () => {
                 joinData.name = getName();
                 socket.emit('join', joinData);
@@ -124,7 +126,19 @@
                 const player = new Player(joinData.name, joinData.color, joinData.position);
                 player.customUpdate = playerUpdate.bind(player);
                 roomDiv.innerHTML = '';
+
+                if(firstConnect) {
+                    let respawn = document.createElement('button');
+                    respawn.innerHTML = 'Respawn';
+                    respawn.onclick = () => {
+                        if(player.added) return;
+                        socket.emit('join', joinData);
+                    };
+                    document.querySelector('#respawn').appendChild(respawn);
+                }
+
                 player.instantiate();
+                firstConnect = false;
             });
 
             socket.emit('join', joinData);
@@ -175,6 +189,13 @@
 <body>
     <canvas>Dumb browser, get a new one</canvas>
     <div id="pop_ups"></div>
+
+    <div id="scoreContainer">
+        <h2>Scores:</h2>
+        <div id="respawn"></div>
+        <ul id="scores"></ul>
+    </div>
+    
     <div id="roomSelect">
         <ul id="rooms">
         </ul>
@@ -184,6 +205,7 @@
             <p>Create Room</p>
         </button>
     </div>
-    <h3 style="position: absolute; top: 20px; left: 20px">WASD to move</h3>
+
+    <h3 style="position: absolute; top: 20px; right: 20px">WASD to move</h3>
 </body>
 </html>

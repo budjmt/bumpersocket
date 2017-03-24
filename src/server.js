@@ -32,10 +32,10 @@ const pushUpdates = (scene, room) => {
 
   if (scene.gameOver) {
     if (scene.winner) {
-      //io.sockets.in(room).emit('win', scene.winner);
+      // io.sockets.in(room).emit('win', scene.winner);
     }
-    scene.reset();
-    io.sockets.in(room).emit('gameOver');
+    // scene.reset();
+    // io.sockets.in(room).emit('gameOver');
   }
 
   const updatePacket = Object.keys(scene.players).map(player => scene.players[player].packet);
@@ -53,7 +53,7 @@ const onJoin = (sock) => {
   const socket = sock;
   socket.on('join', (data) => {
     const scene = rooms[data.room];
-    if(!scene) {
+    if (!scene) {
       socket.emit('roomList', Object.keys(rooms));
       return;
     }
@@ -112,7 +112,8 @@ const onRoom = (sock) => {
   });
 
   socket.on('createRoom', (roomName) => {
-    if (Object.keys(rooms).find(room => room === roomName) || Object.keys(io.sockets.adapter.rooms).find(room => room === roomName)) {
+    if (Object.keys(rooms).find(room => room === roomName)
+     || Object.keys(io.sockets.adapter.rooms).find(room => room === roomName)) {
       socket.emit('roomCreateFailure');
       return;
     }

@@ -74,6 +74,12 @@ canvas {
 	pointer-events: none;
 }
 
+#scoreContainer {
+	position: absolute;
+	left: 20px;
+	top: 20px;
+}
+
 #roomSelect {
 	position: absolute;
 	height: 100%;
@@ -81,11 +87,6 @@ canvas {
 	top: 0; 
 	left: 0; right: 0;
 	margin: 0 auto;
-}
-
-#roomSelect {
-	height: 100%;
-	margin: 0px auto;
 	display: flex;
 	justify-content: center;
 	align-items: center;

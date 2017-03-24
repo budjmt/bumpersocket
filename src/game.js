@@ -120,7 +120,7 @@ class Player {
     if (this.direction.length() === 0) this.applyFriction();
     this.direction.set(0, 0, 0);
 
-    if (this.lastTouch && new Date().getTime() - this.lastTouch.time > 2000) {
+    if (this.lastTouch && new Date().getTime() - this.lastTouch.time > 10000) {
       this.lastTouch = null;
     }
   }
