@@ -78,6 +78,24 @@ canvas {
 	position: absolute;
 	left: 20px;
 	top: 20px;
+	font-family: "Lucida Console", Monaco, monospace;
+}
+
+#scoreContainer tr {
+	width: 100%;
+}
+
+#scoreContainer td {
+	text-align: center;
+	margin: 0 auto;
+}
+
+#instructions {
+	position: absolute; 
+	top: 20px; 
+	right: 20px;
+	border: 2px solid black;
+	padding: 20px;
 }
 
 #roomSelect {

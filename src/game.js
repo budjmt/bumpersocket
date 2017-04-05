@@ -2,13 +2,16 @@ const Ammo = require('ammo-node');
 const THREE = require('three');
 const Physijs = require('./lib/physi.js')(THREE, Ammo);
 
+const randRange = (min, max) => (Math.random() * (max - min)) + min;
+
 class Scene {
   constructor() {
     this.scene = new Physijs.Scene();
     this.scene.setGravity(new THREE.Vector3(0, -9.8, 0));
 
+    this.dims = 20;
     const ground = new Physijs.BoxMesh(
-      new THREE.BoxGeometry(20, 20, 1),
+      new THREE.BoxGeometry(this.dims, this.dims, 1),
       Physijs.createMaterial(new THREE.MeshBasicMaterial(), 0.8, 0.7), 0);
     ground.rotation.set(Math.PI / 2, 0, 0);
     this.scene.add(ground);
@@ -20,24 +23,15 @@ class Scene {
         player.update();
 
         // if the player fell off the stage
-        if (player.gameObject.position.y < -5) {
-          this.losers.push(player);
+        if (player.gameObject.position.y < -8) {
           if (player.lastTouch) { player.lastTouch.player.score++; }
-          player.destroy(this);
+          if(player.score > 0) --player.score;
+          player.spawnMove(this);
         } else { playersLeft.push(player); }
       });
-
-      if (playersLeft.length < 2 && this.playerCount > 1) {
-        this.gameOver = true;
-        if (playersLeft.length === 1) { this.winner = playersLeft[0]; }
-      }
     });
 
     this.simInterval = setInterval(this.scene.simulate.bind(this.scene), 1000 / 60);
-
-    this.winner = null;
-    this.gameOver = false;
-    this.losers = [];
 
     this.players = {};
     this.playerCount = 0;
@@ -51,7 +45,6 @@ class Scene {
 
   reset() {
     Object.keys(this.players).forEach(player => this.players[player].destroy(this));
-    this.gameOver = false;
   }
 
   addPlayer(player) {
@@ -63,10 +56,15 @@ class Scene {
     this.scene.remove(player.gameObject);
     delete this.players[player.name];
   }
+
+  randSpawnPosition() {
+    const safe = this.dims / 4;
+    return new THREE.Vector3(randRange(-safe, safe), 5, randRange(-safe, safe));
+  }
 }
 
 class Player {
-  constructor(name, color, position) {
+  constructor(name, color) {
     this.name = name;
     this.color = color;
     this.gameObject = new Physijs.SphereMesh(
@@ -74,7 +72,6 @@ class Player {
       , Physijs.createMaterial(new THREE.MeshBasicMaterial(), 0.8, 0.7));
     this.gameObject.name = 'car';
     this.gameObject.player = this;
-    this.gameObject.position.set(position.x, position.y, position.z);
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
@@ -88,8 +85,16 @@ class Player {
   get angularVel() { return this.gameObject.getAngularVelocity(); }
   set angularVel(val) { this.gameObject.setAngularVelocity(val); }
 
+  spawnMove(scene) {
+    const pos = scene.randSpawnPosition();
+    this.gameObject.position.set(pos.x, pos.y, pos.z);
+    this.gameObject.__dirtyPosition = true;
+    this.linearVel = this.angularVel = new THREE.Vector3();
+  }
+
   instantiate(scene) {
     if (this.added) return;
+    this.spawnMove(scene);
     scene.addPlayer(this);
     this.added = true;
   }

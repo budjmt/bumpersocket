@@ -25,19 +25,6 @@ const io = socketio(httpServer);
 const rooms = {};
 
 const pushUpdates = (scene, room) => {
-  while (scene.losers.length > 0) {
-    const name = scene.losers.pop().name;
-    console.log(`${name} lost`);
-  }
-
-  if (scene.gameOver) {
-    if (scene.winner) {
-      // io.sockets.in(room).emit('win', scene.winner);
-    }
-    // scene.reset();
-    // io.sockets.in(room).emit('gameOver');
-  }
-
   const updatePacket = Object.keys(scene.players).map(player => scene.players[player].packet);
   io.sockets.in(room).emit('update', { players: updatePacket, time: new Date().getTime() });
 
@@ -51,7 +38,7 @@ const pushUpdates = (scene, room) => {
 
 const onJoin = (sock) => {
   const socket = sock;
-  socket.playersSpawned = 0;  
+  socket.playersSpawned = 0;
   socket.on('join', (data) => {
     const scene = rooms[data.room];
     if (!scene) {
@@ -68,7 +55,7 @@ const onJoin = (sock) => {
     console.log(data.name);
     // console.dir(io);
 
-    const player = new game.Player(socket.name, data.color, data.position);
+    const player = new game.Player(socket.name, data.color);
     player.instantiate(scene);
     scene.playerCount++;
     socket.playersSpawned++;
@@ -78,7 +65,7 @@ const onJoin = (sock) => {
     // best of both worlds might be having add/lose require confirmation from the client
     // or making them specifically TCP
     // probably premature optimization
-    socket.emit('connectSuccess');
+    socket.emit('connectSuccess', { position: player.gameObject.position });
   });
 };
 

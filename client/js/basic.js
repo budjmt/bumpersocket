@@ -1,4 +1,6 @@
 
+const lerp = (a, b, t) => (1-t) * a + t * b;
+
 const aboutEqual = (a, b) => Math.abs(a - b) < 0.001;
 const aboutEqual3 = (a, b) => aboutEqual(a.x, b.x) && aboutEqual(a.y, b.y) && aboutEqual(a.z, b.z);
 
@@ -45,6 +47,7 @@ class Player {
   constructor(name, color, position) {
     this.name = name;
     this.color = color;
+    
     this.gameObject = new Physijs.SphereMesh(
       new THREE.SphereGeometry(1),
       Physijs.createMaterial(
@@ -54,13 +57,35 @@ class Player {
         }), 0.8, 0.7)
     );
     this.gameObject.name = 'car';
+    this.gameObject.castShadow = true;
     this.gameObject.position.set(position.x, position.y, position.z);
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
+
+    let threeColor = new THREE.Color(this.color);
+    threeColor.offsetHSL(0, 0.1, 0.2);
+    this.trail = new Trail(this.gameObject, new THREE.Mesh(
+      new THREE.SphereGeometry(0.9),
+      new THREE.MeshBasicMaterial({
+        color: threeColor,
+        transparent: true,
+        opacity: 0.8
+      })
+    ), 50, 1000, (me, t) => {
+      const fromScale = new THREE.Vector3(0.9,0.9,0.9);
+      const toScale = new THREE.Vector3(0.05,0.05,0.05);
+      fromScale.lerp(toScale, t);
+      me.scale.set(fromScale.x, fromScale.y, fromScale.z);
+      me.material.opacity = lerp(0.8, 0.1, t);
+    }, (me) => {
+      me.scale.set(0.9, 0.9, 0.9);
+      me.material.opacity = 0.8;
+    });
+
     this.direction = new THREE.Vector3(0, 0, 0);
     this.lastUpdate = new Date().getTime();
-    this.customUpdate = undefined;
-    this.nextState = undefined;
-    this.score = 0;
+    this.customUpdate = null;
+    this.nextState = null;
+    this.score = this.genScore(name);
   }
 
   get linearVel() { return this.gameObject.getLinearVelocity(); }
@@ -69,34 +94,73 @@ class Player {
   get angularVel() { return this.gameObject.getAngularVelocity(); }
   set angularVel(val) { this.gameObject.setAngularVelocity(val); }
 
+  genScore(name) {
+    let scoreDisplay = new Display('tr', null, function(score) {
+      const delta = score - this.value;
+      if(delta === 0) return;
+      this.value = score;
+      this.display.update(this.value, delta);
+    }, (el) => {
+      el.innerHTML = `<th>${name}</th><td class="display"></td>`;
+    });
+    scoreDisplay.value = 0;
+
+    scoreDisplay.display = new Display(scoreDisplay.element.querySelector('.display'), null, function(score, delta) {
+      this.element.innerHTML = score;
+      this.change.update(delta);
+    }, (el) => {
+      el.innerHTML = scoreDisplay.value;
+    });
+    
+    scoreDisplay.display.change = new Display('span', scoreDisplay.element, function(delta) {
+        let sign = {};
+        if(delta > 0) { sign.punc = '+'; sign.color = 'green'; }
+        else { sign.punc = '-'; sign.color = 'red'; }
+        this.element.innerHTML = `${sign.punc}${Math.abs(delta).toString()}`;
+        this.element.style.color = sign.color;
+        this.element.style.opacity = 1;
+        this.element.style.top = '0px';
+        window.clearTimeout(this.timeout);
+        this.timeout = window.setTimeout(() => {
+          this.element.style.opacity = 0;
+          this.element.style.top = '-20px';
+        }, 500);
+    }, (el) => {
+      el.style.transition = 'all 0.2s';
+      el.style.display = 'inline-block';
+      el.style.position = 'relative';
+      el.style.left = '10px';
+    });
+
+    return scoreDisplay;
+  }
+
   instantiate(scoreBoard) {
     if (this.added) return;
     scene.scene.add(this.gameObject);
+    this.trail.addToScene(scene.scene);
     players[this.name] = this;
     this.added = true;
-    
-    this.scoreElement = document.createElement('li');
-    this.scoreElement.innerHTML = `<p>${this.name}: <span class="display">${this.score}</span></p>`;
-    this.scoreDisplay = this.scoreElement.querySelector('.display');
-    scoreBoard = scoreBoard || document.querySelector('#scores');
-    scoreBoard.appendChild(this.scoreElement);
+
+    this.score.setParent(scoreBoard || document.querySelector('#scores'));
   }
 
   destroy(scoreBoard) {
     if (!this.added) return;
     scene.scene.remove(this.gameObject);
+    this.trail.removeFromScene(scene.scene);
     delete players[this.name];
     this.added = false;
 
-    scoreBoard = scoreBoard || document.querySelector('#scores');
-    scoreBoard.removeChild(this.scoreElement);
+    this.score.parent.removeChild(this.score.element);
+    this.score = null;
   }
 
   get packet() {
     return {
       name: this.name,
       color: this.color,
-      score: this.score,
+      score: this.score.value,
       position: this.gameObject.position,
       rotation: this.gameObject.quaternion
     };
@@ -123,6 +187,7 @@ class Player {
     this.direction.set(0, 0, 0);
     this.adjustState();
     if(this.customUpdate) this.customUpdate();
+    this.trail.update();
   }
 
   onCollision(other, relVel, relRot, contactNormal) {
@@ -132,11 +197,6 @@ class Player {
       v.setLength(20);
       other.applyCentralForce(v);
     }
-  }
-
-  updateScore(score) {
-    this.score = score;
-    this.scoreDisplay.innerHTML = this.score;
   }
 
   updateDirection(input) {

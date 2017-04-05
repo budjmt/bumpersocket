@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Syncing 2</title>
+    <title>Bumper Socket</title>
 
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
 
@@ -14,10 +14,11 @@
         Physijs.scripts.worker = '/js/lib/physijs_worker.js';
         Physijs.scripts.ammo   = '/js/lib/ammo.js';
     </script>
+    <script src="/js/trail.js"></script>
     <script src="/js/basic.js"></script>
     <script src="/js/scene.js"></script>
     <script src="/js/ui.js"></script>
-    <script type="text/babel">
+    <script type="text/javascript">
 
     const randRange = (min, max) => Math.random() * (max - min) + min;
 
@@ -45,7 +46,7 @@
                 if(player) {
                     if (data.time > player.lastUpdate) {
                         player.lastUpdate = data.time;
-                        player.updateScore(playerData.score);
+                        player.score.update(playerData.score);
 
                         const go = player.gameObject;
                         player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
@@ -111,35 +112,19 @@
                 name:  getName()
               , color: randColor()
               , room: roomName
-              , position: new THREE.Vector3(randRange(-5, 5), 5, randRange(-5, 5)) 
             };
-
-            let firstConnect = true;
-            let respawn;
 
             socket.on('connectFail', () => {
                 joinData.name = getName();
                 socket.emit('join', joinData);
             });
 
-            socket.on('connectSuccess', () => {
+            socket.on('connectSuccess', (data) => {
                 name = joinData.name;
-                const player = new Player(joinData.name, joinData.color, joinData.position);
+                const player = new Player(joinData.name, joinData.color, data.position);
                 player.customUpdate = playerUpdate.bind(player);
                 roomDiv.innerHTML = '';
-
-                if(firstConnect) {
-                    respawn = document.createElement('button');
-                    respawn.innerHTML = 'Respawn';
-                    document.querySelector('#respawn').appendChild(respawn);
-                }
-
-                respawn.onclick = () => {
-                    if(player.added) return; // have to renew the player reference
-                    socket.emit('join', joinData);
-                };
                 player.instantiate();
-                firstConnect = false;
             });
 
             socket.emit('join', joinData);
@@ -191,11 +176,10 @@
     <canvas>Dumb browser, get a new one</canvas>
     <div id="pop_ups"></div>
 
-    <div id="scoreContainer">
-        <h2>Scores:</h2>
-        <div id="respawn"></div>
-        <ul id="scores"></ul>
-    </div>
+    <table id="scoreContainer">
+        <thead><tr><th>Scores:</th></tr></thead>
+        <tbody id="scores"></tbody>
+    </table>
     
     <div id="roomSelect">
         <ul id="rooms">
@@ -207,6 +191,10 @@
         </button>
     </div>
 
-    <h3 style="position: absolute; top: 20px; right: 20px">WASD to move</h3>
+    <div id="instructions">
+        <h3>WASD to move</h3>
+        <p>-1 for falling off</p>
+        <p>+1 for knocking someone off</p>
+    </div>
 </body>
 </html>

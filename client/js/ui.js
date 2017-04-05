@@ -98,6 +98,22 @@ const setupMenu = (options, setup) => {
 };
 */
 
+class Display {
+  constructor(element, parent, update, setup) {
+    this.element = (typeof(element) === 'string') ? document.createElement(element) : element;
+    if(setup) setup(this.element);
+    if(parent) {
+      this.setParent(parent);
+    }
+    this.update = update;
+  }
+
+  setParent(element) {
+    this.parent = element;
+    this.parent.appendChild(this.element);
+  }
+}
+
 const setupUI = () => {
   
 };
