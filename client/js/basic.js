@@ -1,5 +1,5 @@
 
-const lerp = (a, b, t) => (1-t) * a + t * b;
+const lerp = (a, b, t) => (1 - t) * a + t * b;
 
 const aboutEqual = (a, b) => Math.abs(a - b) < 0.001;
 const aboutEqual3 = (a, b) => aboutEqual(a.x, b.x) && aboutEqual(a.y, b.y) && aboutEqual(a.z, b.z);
@@ -48,37 +48,39 @@ class Player {
     this.name = name;
     this.color = color;
     
+    let threeColor = new THREE.Color(this.color);
+    let emissive = threeColor.r > threeColor.b ? 0x000022 : 0x220000;
     this.gameObject = new Physijs.SphereMesh(
-      new THREE.SphereGeometry(1),
+      new THREE.SphereGeometry(1, 64, 64),
       Physijs.createMaterial(
         new THREE.MeshPhongMaterial({
           color: color,
-          emissive: 0x222222
+          emissive: emissive
         }), 0.8, 0.7)
     );
     this.gameObject.name = 'car';
     this.gameObject.castShadow = true;
+    this.gameObject.receiveShadow = true;
     this.gameObject.position.set(position.x, position.y, position.z);
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
 
-    let threeColor = new THREE.Color(this.color);
     threeColor.offsetHSL(0, 0.1, 0.2);
     this.trail = new Trail(this.gameObject, new THREE.Mesh(
       new THREE.SphereGeometry(0.9),
       new THREE.MeshBasicMaterial({
         color: threeColor,
         transparent: true,
-        opacity: 0.8
+        opacity: 1
       })
-    ), 50, 1000, (me, t) => {
+    ), 50, 500, (me, t) => {
       const fromScale = new THREE.Vector3(0.9,0.9,0.9);
       const toScale = new THREE.Vector3(0.05,0.05,0.05);
       fromScale.lerp(toScale, t);
       me.scale.set(fromScale.x, fromScale.y, fromScale.z);
-      me.material.opacity = lerp(0.8, 0.1, t);
+      //me.material.opacity = lerp(1, 0.1, t);
     }, (me) => {
       me.scale.set(0.9, 0.9, 0.9);
-      me.material.opacity = 0.8;
+      //me.material.opacity = 1;
     });
 
     this.direction = new THREE.Vector3(0, 0, 0);
@@ -241,7 +243,7 @@ window.addEventListener('load', () => {
   renderer.setSize(width(), height(), false);
 	// renderer.setViewport(0, 0, initWidth, initHeight);
   renderer.setClearColor(0xFFFFFF, 1);
-	// renderer.shadowMapEnabled = true;
+	renderer.shadowMap.enabled = true;
 
   uniforms = {
     time: new Uniform('f'),

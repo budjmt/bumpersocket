@@ -25,7 +25,7 @@ class Scene {
         // if the player fell off the stage
         if (player.gameObject.position.y < -8) {
           if (player.lastTouch) { player.lastTouch.player.score++; }
-          if(player.score > 0) --player.score;
+          if (player.score > 0) --player.score;
           player.spawnMove(this);
         } else { playersLeft.push(player); }
       });
@@ -89,7 +89,9 @@ class Player {
     const pos = scene.randSpawnPosition();
     this.gameObject.position.set(pos.x, pos.y, pos.z);
     this.gameObject.__dirtyPosition = true;
-    this.linearVel = this.angularVel = new THREE.Vector3();
+    const zero = new THREE.Vector3();
+    this.linearVel = zero;
+    this.angularVel = zero;
   }
 
   instantiate(scene) {

@@ -42,10 +42,11 @@ class Trail {
         curr.liveTime = new Date().getTime();
         curr.onAfterRender = () => {
             let elapsed = new Date().getTime() - curr.liveTime;
-            this.customUpdate(curr, elapsed / this.lifetime, this.parent);
             if(elapsed > this.lifetime) {
                 curr.visible = false;
                 curr.onAfterRender = null;
+            } else {
+                this.customUpdate(curr, elapsed / this.lifetime, this.parent);
             }
         };
         curr.visible = true;

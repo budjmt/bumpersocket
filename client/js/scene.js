@@ -60,19 +60,35 @@ const basicGameSetup = () => {
   const gameS = new Physijs.Scene();
   gameS.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
   const ground = new Physijs.BoxMesh(
-        new THREE.CubeGeometry(20, 20, 1),
-        Physijs.createMaterial(new THREE.MeshPhongMaterial({
-          color: 0x000000,
-          emissive: 0x553333,
-        }), 0.8, 0.7),
-        0 // mass
-    );
+    new THREE.CubeGeometry(20, 20, 1),
+    Physijs.createMaterial(new THREE.MeshPhongMaterial({
+    }), 0.8, 0.7), 0 // mass
+  );
+
+  const loader = new THREE.TextureLoader();
+  loader.load('media/wood.jpg', (tex) => {
+    ground.material.map = tex;
+    ground.material.needsUpdate = true;
+  });
+  loader.load('media/wood_normal.jpg', (tex) => {
+    ground.material.normalMap = tex;
+    ground.material.needsUpdate = true;
+  });
+
+  ground.receiveShadow = true;
   ground.rotation.set(Math.PI / 2, 0, 0);
   gameS.add(ground);
 
   const light = new THREE.DirectionalLight(0xffffff, 1.0);
-  light.position.set(5, 4, 3);
-  light.rotation.set(-Math.PI / 2, Math.PI / 2, 0);
+  light.castShadow = true;
+  light.shadow.camera.top = 12;
+  light.shadow.camera.right = 14;
+  light.shadow.camera.bottom = -light.shadow.camera.top;
+  light.shadow.camera.left = -light.shadow.camera.right;
+  light.shadow.mapSize.set(1024, 1024);
+
+  //gameS.add(new THREE.CameraHelper(light.shadow.camera));
+  light.position.set(-5, 15, -5);
   gameS.add(light);
 
   const s = new Scene(gameS);
