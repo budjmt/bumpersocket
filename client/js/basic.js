@@ -65,14 +65,18 @@ class Player {
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
 
     threeColor.offsetHSL(0, 0.1, 0.2);
-    this.trail = new Trail(this.gameObject, new THREE.Mesh(
-      new THREE.SphereGeometry(0.9),
-      new THREE.MeshBasicMaterial({
-        color: threeColor,
-        transparent: true,
-        opacity: 1
-      })
-    ), 50, 500, (me, t) => {
+    this.trail = new Trail((() => {
+        const trailMesh = new THREE.Mesh(
+        new THREE.CircleBufferGeometry(0.9),
+        new THREE.MeshBasicMaterial({
+          color: threeColor,
+          transparent: true,
+          opacity: 1
+        })
+      );
+      trailMesh.rotation.set(-Math.PI / 2, 0, 0);
+      return trailMesh;
+    })(), 50, 500, (me, t) => {
       const fromScale = new THREE.Vector3(0.9,0.9,0.9);
       const toScale = new THREE.Vector3(0.05,0.05,0.05);
       fromScale.lerp(toScale, t);
@@ -189,12 +193,13 @@ class Player {
     this.direction.set(0, 0, 0);
     this.adjustState();
     if(this.customUpdate) this.customUpdate();
-    this.trail.update();
+    this.trail.update(this.gameObject);
   }
 
   onCollision(other, relVel, relRot, contactNormal) {
     // check if other object is a player
     if(other.name === 'car') {
+      console.log('hu');
       let v = contactNormal;
       v.setLength(20);
       other.applyCentralForce(v);
@@ -204,6 +209,37 @@ class Player {
   updateDirection(input) {
     this.direction.set(input.direction.x, input.direction.y, input.direction.z);
   }
+
+  static genCollideTrail() {
+    return new Trail((() => {
+      const trailMesh = new THREE.Mesh(
+        new THREE.CircleBufferGeometry(0.9),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 1
+        })
+      );
+      trailMesh.rotation.set(-Math.PI / 2, 0, 0);
+      return trailMesh;
+    })(), 20, 500, (me, t) => {
+      //console.log('hi');
+      me.material.opacity = lerp(1, 0, t);
+    }, (me) => {
+      me.material.opacity = 1;
+    });
+  }
+}
+
+const setupStatics = () => {
+  Scene.base = (() => {
+    const s = new Scene(new Physijs.Scene());
+		// defines fall-off fog; exponential and off-white, from 0.5 to 10
+		// s.scene.fog = new THREE.FogExp2(0xEEEEEE, 3, 10);
+    return s;
+  })();
+
+  Player.CollideTrail = Player.genCollideTrail();
 }
 
 let canvas;
@@ -228,12 +264,7 @@ window.addEventListener('load', () => {
   const initWidth = window.innerWidth;
   const initHeight = window.innerHeight;
 
-  Scene.base = (() => {
-    const s = new Scene(new Physijs.Scene());
-		// defines fall-off fog; exponential and off-white, from 0.5 to 10
-		// s.scene.fog = new THREE.FogExp2(0xEEEEEE, 3, 10);
-    return s;
-  })();
+  setupStatics();
 
   canvas = document.querySelector('canvas');
 	// canvas.width  = initWidth;

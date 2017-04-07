@@ -17,26 +17,26 @@ class Scene {
     this.scene.add(ground);
 
     this.scene.addEventListener('update', () => {
-      const playersLeft = [];
       Object.keys(this.players).forEach((playerName) => {
         const player = this.players[playerName];
         player.update();
 
         // if the player fell off the stage
         if (player.gameObject.position.y < -8) {
-          if (player.lastTouch) { player.lastTouch.player.score++; }
+          if (player.lastTouch) player.lastTouch.player.score++;
           if (player.score > 0) --player.score;
           player.spawnMove(this);
-        } else { playersLeft.push(player); }
+        }
       });
     });
 
     this.simInterval = setInterval(this.scene.simulate.bind(this.scene), 1000 / 60);
 
     this.players = {};
-    this.playerCount = 0;
     this.lastDisconnect = new Date().getTime();
   }
+
+  get playerCount() { return Object.keys(this.players).length; }
 
   destroy() {
     clearInterval(this.simInterval);
@@ -67,13 +67,15 @@ class Player {
   constructor(name, color) {
     this.name = name;
     this.color = color;
+
     this.gameObject = new Physijs.SphereMesh(
         new THREE.SphereGeometry(1)
       , Physijs.createMaterial(new THREE.MeshBasicMaterial(), 0.8, 0.7));
     this.gameObject.name = 'car';
     this.gameObject.player = this;
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
-    this.direction = new THREE.Vector3(0, 0, 0);
+    
+    this.direction = new THREE.Vector3();
     this.lastUpdate = new Date().getTime();
     this.lastTouch = null;
     this.score = 0;
@@ -118,13 +120,16 @@ class Player {
 
   applyFriction() {
     const av = this.angularVel.multiplyScalar(0.8);
-    if (av.length() < 0.001) av.set(0, 0, 0);
+    if (av.lengthSq() < 0.00001) av.set(0, 0, 0);
     this.angularVel = av;
   }
 
   update() {
     this.gameObject.applyCentralForce(this.direction);
-    if (this.direction.length() === 0) this.applyFriction();
+    
+     // faster length == 0 check
+    const fakeLen = this.direction.x + this.direction.y + this.direction.z;
+    if (fakeLen === 0) this.applyFriction();
     this.direction.set(0, 0, 0);
 
     if (this.lastTouch && new Date().getTime() - this.lastTouch.time > 10000) {
