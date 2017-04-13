@@ -25,8 +25,11 @@ const io = socketio(httpServer);
 const rooms = {};
 
 const pushUpdates = (scene, room) => {
-  const updatePacket = Object.keys(scene.players).map(player => scene.players[player].packet);
-  io.sockets.in(room).emit('update', { players: updatePacket, time: new Date().getTime() });
+  const playerPacket = Object.keys(scene.players).map(player => scene.players[player].packet);
+  io.sockets.in(room).emit('updatePlayer', { players: playerPacket, time: new Date().getTime() });
+
+  const powerupPacket = Object.keys(scene.powerups).map(pu => scene.powerups[pu].packet);
+  io.sockets.in(room).emit('updatePowerup', { powerups: powerupPacket, time: new Date().getTime() });
 
   const expireTime = 2 * 60 * 1000; // 2 minutes
   if (scene.playerCount < 1 && new Date().getTime() - scene.lastDisconnect > expireTime) {

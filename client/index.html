@@ -15,6 +15,8 @@
         Physijs.scripts.ammo   = '/js/lib/ammo.js';
     </script>
     <script src="/js/trail.js"></script>
+    <script src="/js/player.js"></script>
+    <script src="/js/powerup.js"></script>
     <script src="/js/basic.js"></script>
     <script src="/js/scene.js"></script>
     <script src="/js/ui.js"></script>
@@ -38,7 +40,7 @@
     const init = () => {
         socket = io.connect();
 
-        socket.on('update', (data) => {
+        socket.on('updatePlayer', (data) => {
             data.players.forEach(playerData => {
                 let player = players[playerData.name];
 
@@ -46,10 +48,15 @@
                 if(player) {
                     if (data.time > player.lastUpdate) {
                         player.lastUpdate = data.time;
-                        player.score.update(playerData.score);
+                        player.score.update(playerData.score); // TODO add CSS to change score color with player color
 
                         const go = player.gameObject;
-                        player.nextState = { time: data.time, position: getVector3(playerData.position), rotation: getQuat(playerData.rotation) };
+                        player.nextState = { 
+                            //time: new Date().getTime(), 
+                            time: data.time, 
+                            position: getVector3(playerData.position), 
+                            rotation: getQuat(playerData.rotation) 
+                        };
                     }
                 }
                 // add
@@ -57,6 +64,28 @@
                     player = new Player(playerData.name, playerData.color, playerData.position);
                     player.lastUpdate = data.time;
                     player.instantiate();
+                }
+            });
+        });
+
+        socket.on('updatePowerup', (data) => {
+            //console.log(data);
+            if(data.powerups.length != Object.keys(powerups).length) {
+                Object.keys(powerups).forEach(powerup => {
+                    if(!data.powerups.some(update => update.id == powerup.id)) {
+                        powerup.destroy();
+                    }
+                });
+            }
+            data.powerups.forEach(powerupData => {
+                let powerup = powerups[powerupData.id];
+                if(powerup) {
+                    powerup.gameObject.position.set(powerupData.position);
+                    powerup.gameObject.__dirtyPosition = true;
+                }
+                else{
+                    let p = Powerup.instance(powerupData.type);
+                    p.instantiate(powerupData.position);
                 }
             });
         });

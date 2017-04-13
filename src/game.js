@@ -4,6 +4,81 @@ const Physijs = require('./lib/physi.js')(THREE, Ammo);
 
 const randRange = (min, max) => (Math.random() * (max - min)) + min;
 
+class Powerup {
+  constructor(type, effect, reset, period) {
+    this.type = type;
+    this.effect = effect;
+    this.cache = {};
+    this.period = period;
+    this.reset = reset;
+  }
+
+  get packet() {
+    return {
+      id: this.id,
+      type: this.type,
+      position: this.gameObject.position
+    };
+  }
+
+  static instance(type) {
+    const p = Powerup.templates[type];
+    return new Powerup(p.type, p.effect, p.reset, p.period);
+  }
+
+  instantiate(scene) {
+    this.scene = scene;
+    this.gameObject = new Physijs.BoxMesh(
+      new THREE.PlaneGeometry(0.5, 0.5),
+      new THREE.MeshBasicMaterial());
+    this.gameObject.name = 'powerup';
+    
+    const pos = this.scene.randSpawnPosition();
+    this.gameObject.position.set(pos.x, pos.y, pos.z);
+    
+    this.gameObject.logic = this;
+    this.scene.addPowerup(this);
+  }
+
+  applyTo(player) {
+    if (this.scene) { this.effect(this, player); }
+    if (this.period) setTimeout(() => this.reset(this, player), this.period);
+    this.scene.removePowerup(this);
+  }
+}
+
+Powerup.types = {
+  speed: 0,
+  size: 1,
+};
+Object.seal(Powerup.types);
+
+Powerup.templates = {};
+
+// speed up
+Powerup.templates[Powerup.types.speed] =
+  new Powerup(Powerup.types.speed, (_me, _player) => {
+    const me = _me; const player = _player;
+    me.cache.speed = player.speed;
+    player.speed = 10;
+  }, (me, _player) => {
+    const player = _player;
+    player.speed = me.cache.speed;
+  }, 2000);
+
+// make bigger
+Powerup.templates[Powerup.types.size] =
+  new Powerup(Powerup.types.size, (_me, player) => {
+    const me = _me;
+    me.cache.scale = player.gameObject.scale.clone();
+    player.gameObject.scale.set(5, 5, 5);
+  }, (me, _player) => {
+    const player = _player;
+    player.gameObject.scale.set(me.cache.scale.x, me.cache.scale.y, me.cache.scale.z);
+  }, 2000);
+
+Object.seal(Powerup.templates);
+
 class Scene {
   constructor() {
     this.scene = new Physijs.Scene();
@@ -21,6 +96,8 @@ class Scene {
         const player = this.players[playerName];
         player.update();
 
+        this.trySpawnPowerup();
+
         // if the player fell off the stage
         if (player.gameObject.position.y < -8) {
           if (player.lastTouch) player.lastTouch.player.score++;
@@ -33,7 +110,8 @@ class Scene {
     this.simInterval = setInterval(this.scene.simulate.bind(this.scene), 1000 / 60);
 
     this.players = {};
-    this.lastDisconnect = new Date().getTime();
+    this.powerups = {};
+    this.lastPowerupAttempt = this.lastDisconnect = new Date().getTime();
   }
 
   get playerCount() { return Object.keys(this.players).length; }
@@ -57,9 +135,32 @@ class Scene {
     delete this.players[player.name];
   }
 
+  addPowerup(_powerup) {
+    const powerup = _powerup;
+    this.scene.add(powerup.gameObject);
+    do { powerup.id = Math.random() * 5; } while(this.powerups[powerup.id]);
+    this.powerups[powerup.id] = powerup;
+  }
+
+  removePowerup(powerup) {
+    this.scene.remove(powerup.gameObject);
+    delete this.powerups[powerup.id];
+  }
+
   randSpawnPosition() {
     const safe = this.dims / 4;
     return new THREE.Vector3(randRange(-safe, safe), 5, randRange(-safe, safe));
+  }
+
+  trySpawnPowerup() {
+    const powerupInterval = 10000;
+    const maxPowerups = 3;
+    if (new Date().getTime() - this.lastPowerupAttempt > powerupInterval) {
+      this.lastPowerupAttempt = new Date().getTime();
+      if (this.powerups.length < maxPowerups) {
+        Powerup.instance(Math.floor(Math.random() * Powerup.templates.length)).instantiate();
+      }
+    }
   }
 }
 
@@ -74,8 +175,10 @@ class Player {
     this.gameObject.name = 'car';
     this.gameObject.player = this;
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
-    
+
     this.direction = new THREE.Vector3();
+    this.speed = 1;
+
     this.lastUpdate = new Date().getTime();
     this.lastTouch = null;
     this.score = 0;
@@ -125,8 +228,9 @@ class Player {
   }
 
   update() {
+    this.direction.multiplyScalar(this.speed);
     this.gameObject.applyCentralForce(this.direction);
-    
+
      // faster length == 0 check
     const fakeLen = this.direction.x + this.direction.y + this.direction.z;
     if (fakeLen === 0) this.applyFriction();
@@ -143,11 +247,17 @@ class Player {
 
   onCollision(other, relVel, relRot, contactNormal) {
     // check if other object is a player
-    if (other.name === 'car') {
-      const v = contactNormal;
-      v.setLength(20);
-      other.applyCentralForce(v);
-      other.player.touch(this);
+    const v = contactNormal;
+    switch (other.name) {
+      case 'car':
+        v.setLength(20);
+        other.applyCentralForce(v);
+        other.player.touch(this);
+        break;
+      case 'powerup':
+        other.logic.applyTo(this);
+        break;
+      default:
     }
   }
 

@@ -60,7 +60,7 @@ const basicGameSetup = () => {
   const gameS = new Physijs.Scene();
   gameS.setGravity(new THREE.Vector3( 0, -9.8, 0 ));
   const ground = new Physijs.BoxMesh(
-    new THREE.CubeGeometry(20, 20, 1),
+    new THREE.BoxBufferGeometry(20, 20, 1),
     Physijs.createMaterial(new THREE.MeshPhongMaterial({
     }), 0.8, 0.7), 0 // mass
   );
