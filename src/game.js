@@ -50,8 +50,8 @@ class Powerup {
 
 Powerup.types = {
   speed: 0,
-  //size: 1,
-  heavy: 1
+  // size: 1,
+  heavy: 1,
 };
 Object.seal(Powerup.types);
 
@@ -60,14 +60,16 @@ Powerup.templates = {};
 // speed up
 Powerup.templates[Powerup.types.speed] =
   new Powerup(Powerup.types.speed, (_me, _player) => {
-    const me = Powerup.templates[_me.type]; const player = _player;
-    //me.cache.speed = me.cache.speed || player.speed;
+    // const me = Powerup.templates[_me.type];
+    const player = _player;
+    // me.cache.speed = me.cache.speed || player.speed;
     player.speed = 3;
   }, (_me, _player) => {
-    const me = Powerup.templates[_me.type]; const player = _player;
-    //player.speed = me.cache.speed;
+    // const me = Powerup.templates[_me.type];
+    const player = _player;
+    // player.speed = me.cache.speed;
     player.speed = 1.25;
-    //me.cache.speed = null;
+    // me.cache.speed = null;
   }, 5000);
 
 // can't do with physijs, object scale is static after creation
@@ -85,14 +87,16 @@ Powerup.templates[Powerup.types.speed] =
 // weight up
 Powerup.templates[Powerup.types.heavy] =
   new Powerup(Powerup.types.heavy, (_me, _player) => {
-    const me = Powerup.templates[_me.type]; const player = _player;
-    //me.cache.speed = me.cache.speed || player.speed;
+    // const me = Powerup.templates[_me.type];
+    const player = _player;
+    // me.cache.speed = me.cache.speed || player.speed;
     player.gameObject.mass = 6;
   }, (_me, _player) => {
-    const me = Powerup.templates[_me.type]; const player = _player;
-    //player.speed = me.cache.speed;
-    player.gameObject.mass = (4/3) * Math.PI;
-    //me.cache.speed = null;
+    // const me = Powerup.templates[_me.type];
+    const player = _player;
+    // player.speed = me.cache.speed;
+    player.gameObject.mass = (4 / 3) * Math.PI;
+    // me.cache.speed = null;
   }, 5000);
 
 Object.seal(Powerup.templates);
@@ -177,7 +181,8 @@ class Scene {
     if (new Date().getTime() - this.lastPowerupAttempt > powerupInterval) {
       this.lastPowerupAttempt = new Date().getTime();
       if (Object.keys(this.powerups).length < maxPowerups) {
-        Powerup.instance(Math.floor(Math.random() * Object.keys(Powerup.types).length)).instantiate(this);
+        const index = Math.floor(Math.random() * Object.keys(Powerup.types).length);
+        Powerup.instance(index).instantiate(this);
       }
     }
   }
