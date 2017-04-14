@@ -20,6 +20,8 @@ class Player {
     this.gameObject.position.set(position.x, position.y, position.z);
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
 
+    this.score = this.genScore(name, threeColor.getStyle());
+
     threeColor.offsetHSL(0, 0.1, 0.2);
     this.trail = new Trail((() => {
         const trailMesh = new THREE.Mesh(
@@ -49,7 +51,6 @@ class Player {
     this.lastUpdate = new Date().getTime();
     this.customUpdate = null;
     this.nextState = null;
-    this.score = this.genScore(name);
   }
 
   get linearVel() { return this.gameObject.getLinearVelocity(); }
@@ -58,14 +59,15 @@ class Player {
   get angularVel() { return this.gameObject.getAngularVelocity(); }
   set angularVel(val) { this.gameObject.setAngularVelocity(val); }
 
-  genScore(name) {
+  // color should be a css style
+  genScore(name, color) {
     let scoreDisplay = new Display('tr', null, function(score) {
       const delta = score - this.value;
       if(delta === 0) return;
       this.value = score;
       this.display.update(this.value, delta);
     }, (el) => {
-      el.innerHTML = `<th>${name}</th><td class="display"></td>`;
+      el.innerHTML = `<th>${name}<div class="scoreColor" style="background-color: ${color}"></div></th><td class="display"></td>`;
     });
     scoreDisplay.value = 0;
 

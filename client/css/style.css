@@ -90,6 +90,14 @@ canvas {
 	margin: 0 auto;
 }
 
+.scoreColor {
+	display: inline-block;
+	width: 10px; 
+	height: 10px;
+	margin-left: 5px;
+	border: 1px solid black;
+}
+
 #instructions {
 	position: absolute; 
 	top: 20px; 
