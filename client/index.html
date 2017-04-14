@@ -112,7 +112,14 @@
 
         window.addEventListener('keydown', (e) => inputs[e.keyCode] = true);
         window.addEventListener('keyup',   (e) => inputs[e.keyCode] = false);
-        window.addEventListener('blur', (e) => Object.keys(inputs).forEach(keyCode => inputs[keyCode] = false));
+        
+        const resetKeys = () => Object.keys(inputs).forEach(keyCode => inputs[keyCode] = false);
+        window.addEventListener('blur', (e) => resetKeys());
+        window.addEventListener('mouseup',   (e) => { inputs.mouse[e.button] = false; });
+        window.addEventListener('mousedown', (e) => { 
+            inputs.mouse[e.button] = true;
+            if(e.button != 0) resetKeys(); 
+        });
 
         const playerUpdate = function() {
             let dir = new THREE.Vector3(0,0,0);

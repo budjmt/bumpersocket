@@ -23,7 +23,7 @@ class Powerup {
 
   instantiate(position) {
     this.gameObject = new Physijs.BoxMesh(
-      new THREE.PlaneGeometry(1.5, 1.5),
+      new THREE.BoxGeometry(1.5, 1.5, 0.1),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
     this.gameObject.name = 'powerup';
     this.gameObject.position.set(position.x, position.y, position.z);

@@ -40,7 +40,7 @@ class Scene {
   }
 }
 
-const inputs = {};
+const inputs = { mouse: {} };
 
 const setupStatics = () => {
   Scene.base = (() => {
@@ -49,6 +49,11 @@ const setupStatics = () => {
 		// s.scene.fog = new THREE.FogExp2(0xEEEEEE, 3, 10);
     return s;
   })();
+
+  //const white = "media/white.png";
+  //const envMapurls = [ white, white, white, "media/wood.jpg", white, white ];
+  //let cubeLoader = new THREE.CubeTextureLoader();
+  //cubeLoader.load(envMapurls, (tex) => Player.EnvMap = tex);
 
   Player.CollideTrail = Player.genCollideTrail();
 

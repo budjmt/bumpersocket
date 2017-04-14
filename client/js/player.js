@@ -159,7 +159,6 @@ class Player {
   onCollision(other, relVel, relRot, contactNormal) {
     // check if other object is a player
     if(other.name === 'car') {
-      console.log('hu');
       let v = contactNormal;
       v.setLength(20);
       other.applyCentralForce(v);
