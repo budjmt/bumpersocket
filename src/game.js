@@ -17,7 +17,7 @@ class Powerup {
     return {
       id: this.id,
       type: this.type,
-      position: this.gameObject.position
+      position: this.gameObject.position,
     };
   }
 
@@ -29,13 +29,14 @@ class Powerup {
   instantiate(scene) {
     this.scene = scene;
     this.gameObject = new Physijs.BoxMesh(
-      new THREE.PlaneGeometry(0.5, 0.5),
+      new THREE.BoxGeometry(1.5, 1.5, 0.1),
       new THREE.MeshBasicMaterial());
     this.gameObject.name = 'powerup';
-    
+    this.gameObject.addEventListener('collision', () => {});
+
     const pos = this.scene.randSpawnPosition();
     this.gameObject.position.set(pos.x, pos.y, pos.z);
-    
+
     this.gameObject.logic = this;
     this.scene.addPowerup(this);
   }
@@ -49,7 +50,8 @@ class Powerup {
 
 Powerup.types = {
   speed: 0,
-  size: 1,
+  //size: 1,
+  heavy: 1
 };
 Object.seal(Powerup.types);
 
@@ -58,24 +60,40 @@ Powerup.templates = {};
 // speed up
 Powerup.templates[Powerup.types.speed] =
   new Powerup(Powerup.types.speed, (_me, _player) => {
-    const me = _me; const player = _player;
-    me.cache.speed = player.speed;
-    player.speed = 10;
-  }, (me, _player) => {
-    const player = _player;
-    player.speed = me.cache.speed;
-  }, 2000);
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //me.cache.speed = me.cache.speed || player.speed;
+    player.speed = 3;
+  }, (_me, _player) => {
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //player.speed = me.cache.speed;
+    player.speed = 1.25;
+    //me.cache.speed = null;
+  }, 5000);
 
+// can't do with physijs, object scale is static after creation
 // make bigger
-Powerup.templates[Powerup.types.size] =
-  new Powerup(Powerup.types.size, (_me, player) => {
-    const me = _me;
-    me.cache.scale = player.gameObject.scale.clone();
-    player.gameObject.scale.set(5, 5, 5);
-  }, (me, _player) => {
-    const player = _player;
-    player.gameObject.scale.set(me.cache.scale.x, me.cache.scale.y, me.cache.scale.z);
-  }, 2000);
+// Powerup.templates[Powerup.types.size] =
+//   new Powerup(Powerup.types.size, (_me, player) => {
+//     const me = _me;
+//     me.cache.scale = player.gameObject.scale.clone();
+//     player.gameObject.scale.set(5, 5, 5);
+//   }, (me, _player) => {
+//     const player = _player;
+//     player.gameObject.scale.set(me.cache.scale.x, me.cache.scale.y, me.cache.scale.z);
+//   }, 5000);
+
+// weight up
+Powerup.templates[Powerup.types.heavy] =
+  new Powerup(Powerup.types.heavy, (_me, _player) => {
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //me.cache.speed = me.cache.speed || player.speed;
+    player.gameObject.mass = 6;
+  }, (_me, _player) => {
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //player.speed = me.cache.speed;
+    player.gameObject.mass = (4/3) * Math.PI;
+    //me.cache.speed = null;
+  }, 5000);
 
 Object.seal(Powerup.templates);
 
@@ -111,7 +129,8 @@ class Scene {
 
     this.players = {};
     this.powerups = {};
-    this.lastPowerupAttempt = this.lastDisconnect = new Date().getTime();
+    this.lastDisconnect = new Date().getTime();
+    this.lastPowerupAttempt = this.lastDisconnect;
   }
 
   get playerCount() { return Object.keys(this.players).length; }
@@ -138,7 +157,7 @@ class Scene {
   addPowerup(_powerup) {
     const powerup = _powerup;
     this.scene.add(powerup.gameObject);
-    do { powerup.id = Math.random() * 5; } while(this.powerups[powerup.id]);
+    do { powerup.id = Math.random() * 5; } while (this.powerups[powerup.id]);
     this.powerups[powerup.id] = powerup;
   }
 
@@ -157,8 +176,8 @@ class Scene {
     const maxPowerups = 3;
     if (new Date().getTime() - this.lastPowerupAttempt > powerupInterval) {
       this.lastPowerupAttempt = new Date().getTime();
-      if (this.powerups.length < maxPowerups) {
-        Powerup.instance(Math.floor(Math.random() * Powerup.templates.length)).instantiate();
+      if (Object.keys(this.powerups).length < maxPowerups) {
+        Powerup.instance(Math.floor(Math.random() * Object.keys(Powerup.types).length)).instantiate(this);
       }
     }
   }
@@ -177,7 +196,7 @@ class Player {
     this.gameObject.addEventListener('collision', this.onCollision.bind(this));
 
     this.direction = new THREE.Vector3();
-    this.speed = 1;
+    this.speed = 1.25;
 
     this.lastUpdate = new Date().getTime();
     this.lastTouch = null;
@@ -217,12 +236,13 @@ class Player {
       name: this.name,
       color: this.color,
       score: this.score,
+      mass: this.gameObject.mass,
       position: this.gameObject.position,
       rotation: this.gameObject.quaternion };
   }
 
   applyFriction() {
-    const av = this.angularVel.multiplyScalar(0.8);
+    const av = this.angularVel.multiplyScalar(0.8 / this.speed);
     if (av.lengthSq() < 0.00001) av.set(0, 0, 0);
     this.angularVel = av;
   }

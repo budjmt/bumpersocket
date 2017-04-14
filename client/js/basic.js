@@ -51,6 +51,14 @@ const setupStatics = () => {
   })();
 
   Player.CollideTrail = Player.genCollideTrail();
+
+  const loader = new THREE.TextureLoader();  
+  Powerup.templates[Powerup.types.speed].texture = "media/shoe.png";
+  Powerup.templates[Powerup.types.heavy].texture = "media/weight.png";
+  Object.keys(Powerup.templates).forEach(pow => {
+    const p = Powerup.templates[pow];
+    loader.load(p.texture, (tex) => p.texture = tex);
+  })
 };
 
 let canvas;

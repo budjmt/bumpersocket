@@ -44,6 +44,8 @@ class Player {
     });
 
     this.direction = new THREE.Vector3(0, 0, 0);
+    this.speed = 1.25;
+
     this.lastUpdate = new Date().getTime();
     this.customUpdate = null;
     this.nextState = null;
@@ -138,15 +140,17 @@ class Player {
   }
 
   applyFriction() {
-    let av = this.angularVel.multiplyScalar(0.8);
+    let av = this.angularVel.multiplyScalar(0.8 / this.speed);
     if(av.length() < 0.001) av.set(0, 0, 0);
     this.angularVel = av;
   }
 
   update() {
+    this.direction.multiplyScalar(this.speed);
     this.gameObject.applyCentralForce(this.direction);
     if(this.direction.length() === 0) this.applyFriction();
     this.direction.set(0, 0, 0);
+    
     this.adjustState();
     if(this.customUpdate) this.customUpdate();
     this.trail.update(this.gameObject);

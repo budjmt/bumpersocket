@@ -50,6 +50,12 @@
                         player.lastUpdate = data.time;
                         player.score.update(playerData.score); // TODO add CSS to change score color with player color
 
+                        const mass = player.gameObject.mass;
+                        if(Math.abs(mass - playerData.mass) > 0.1) {
+                            player.gameObject.mass = playerData.mass;
+                            player.gameObject.material.color.addScalar((mass < playerData.mass) ? -0.3 : 0.3);
+                        }
+
                         const go = player.gameObject;
                         player.nextState = { 
                             //time: new Date().getTime(), 
@@ -70,21 +76,25 @@
 
         socket.on('updatePowerup', (data) => {
             //console.log(data);
-            if(data.powerups.length != Object.keys(powerups).length) {
-                Object.keys(powerups).forEach(powerup => {
-                    if(!data.powerups.some(update => update.id == powerup.id)) {
-                        powerup.destroy();
-                    }
-                });
-            }
+            Object.keys(powerups).forEach(powerupId => {
+                if(!data.powerups.some(update => update.id == powerupId)) {
+                    powerups[powerupId].destroy();
+                }
+            });
+            
             data.powerups.forEach(powerupData => {
                 let powerup = powerups[powerupData.id];
                 if(powerup) {
-                    powerup.gameObject.position.set(powerupData.position);
-                    powerup.gameObject.__dirtyPosition = true;
+                    if(data.time > powerup.lastUdpate) {
+                        powerup.lastUpdate = data.time;
+                        powerup.gameObject.position.set(powerupData.position);
+                        powerup.gameObject.__dirtyPosition = true;
+                    }
                 }
                 else{
                     let p = Powerup.instance(powerupData.type);
+                    p.id = powerupData.id;
+                    p.lastUpdate = data.time;
                     p.instantiate(powerupData.position);
                 }
             });
@@ -224,6 +234,8 @@
         <h3>WASD to move</h3>
         <p>-1 for falling off</p>
         <p>+1 for knocking someone off</p>
+        <p>Shoes make you fast</p>
+        <p>Weights make you heavy</p>
     </div>
 </body>
 </html>

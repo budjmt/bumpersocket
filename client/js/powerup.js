@@ -10,7 +10,7 @@ class Powerup {
 
   get packet() {
     return {
-      id: this.type,
+      id: this.id,
       type: this.type,
       position: this.gameObject.position,
     };
@@ -22,14 +22,19 @@ class Powerup {
   }
 
   instantiate(position) {
-    this.scene = scene;
     this.gameObject = new Physijs.BoxMesh(
-      new THREE.PlaneGeometry(0.5, 0.5),
-      new THREE.MeshBasicMaterial(), 0);
+      new THREE.PlaneGeometry(1.5, 1.5),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
     this.gameObject.name = 'powerup';
-    this.gameObject.position = position;
+    this.gameObject.position.set(position.x, position.y, position.z);
+    this.gameObject.rotation.set(-Math.PI / 2, 0, 0);
     this.gameObject.logic = this;
-    this.scene.addPowerup(this);
+    
+    this.gameObject.material.map = Powerup.templates[this.type].texture;
+    this.gameObject.material.needsUpdate = true;
+
+    scene.scene.add(this.gameObject);
+    powerups[this.id] = this;
   }
 
   destroy() {
@@ -46,7 +51,8 @@ class Powerup {
 
 Powerup.types = {
   speed: 0,
-  size: 1,
+  //size: 1,
+  heavy: 1
 };
 Object.seal(Powerup.types);
 
@@ -61,17 +67,30 @@ Powerup.templates[Powerup.types.speed] =
   }, (me, _player) => {
     const player = _player;
     player.speed = me.cache.speed;
-  }, 2000);
+  }, 5000);
 
-// make bigger
-Powerup.templates[Powerup.types.size] =
-  new Powerup(Powerup.types.size, (_me, player) => {
-    const me = _me;
-    me.cache.scale = player.gameObject.scale.clone();
-    player.gameObject.scale.set(5, 5, 5);
-  }, (me, _player) => {
-    const player = _player;
-    player.gameObject.scale.set(me.cache.scale.x, me.cache.scale.y, me.cache.scale.z);
-  }, 2000);
+// // make bigger
+// Powerup.templates[Powerup.types.size] =
+//   new Powerup(Powerup.types.size, (_me, player) => {
+//     const me = _me;
+//     me.cache.scale = player.gameObject.scale.clone();
+//     player.gameObject.scale.set(5, 5, 5);
+//   }, (me, _player) => {
+//     const player = _player;
+//     player.gameObject.scale.set(me.cache.scale.x, me.cache.scale.y, me.cache.scale.z);
+//   }, 2000);
+
+// weight up
+Powerup.templates[Powerup.types.heavy] =
+  new Powerup(Powerup.types.heavy, (_me, _player) => {
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //me.cache.speed = me.cache.speed || player.speed;
+    player.gameObject.mass = 10;
+  }, (_me, _player) => {
+    const me = Powerup.templates[_me.type]; const player = _player;
+    //player.speed = me.cache.speed;
+    player.gameObject.mass = 1;
+    //me.cache.speed = null;
+  }, 5000);
 
 Object.seal(Powerup.templates);
